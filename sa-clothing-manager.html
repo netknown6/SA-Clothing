@@ -1904,13 +1904,20 @@ function disconnectFirebase(){
 
 function setupFirebaseSync(){
   if(!window._fbReady || !window._fbListen) return;
-  // Listen for remote changes
+  let isFirstLoad = true;
   window._fbListen(function(remoteStore){
-    // Merge: remote wins if it has newer nextId
-    if(remoteStore.nextId > store.nextId){
+    if(isFirstLoad){ isFirstLoad = false; }
+    // Always accept remote data — covers edits, deletes, adds from any device
+    if(JSON.stringify(remoteStore) !== JSON.stringify(store)){
       store = remoteStore;
-      renderDashboard();
+      // Re-render the current active page
+      const activePage = document.querySelector('.page.active');
+      const pageId = activePage ? activePage.id.replace('page-','') : 'dashboard';
+      renderPage(pageId);
       updateBadges();
+      // Show a subtle sync flash on the green dot
+      const dot = document.querySelector('.sync-dot');
+      if(dot){ dot.style.background='#f5c400'; setTimeout(()=>dot.style.background='#4a9e6e',600); }
     }
   });
 }
@@ -1921,11 +1928,15 @@ async function syncToFirebase(){
   }
 }
 
-// Override saveStore to also sync to Firebase
+// Override saveStore to also sync to Firebase immediately
 const _origSaveStore = saveStore;
 function saveStore(){
   _origSaveStore();
   syncToFirebase();
+  // Also re-render current page immediately (local instant update)
+  const activePage = document.querySelector('.page.active');
+  const pageId = activePage ? activePage.id.replace('page-','') : null;
+  if(pageId && pageId !== 'sales') renderPage(pageId);
 }
 
 function clearAllData(){
@@ -1946,8 +1957,9 @@ window.addEventListener('firebaseReady', ()=>{
   const tb = document.querySelector('.topbar-date');
   if(tb){ 
     const dot = document.createElement('span');
-    dot.style.cssText='display:inline-block;width:8px;height:8px;background:#4a9e6e;border-radius:50%;margin-left:6px;' ;
-    dot.title='Firebase connected';
+    dot.className='sync-dot';
+    dot.style.cssText='display:inline-block;width:8px;height:8px;background:#4a9e6e;border-radius:50%;margin-left:6px;transition:background 0.3s;';
+    dot.title='Firebase connected - syncing in real time';
     tb.appendChild(dot);
   }
 }, {once:true});
