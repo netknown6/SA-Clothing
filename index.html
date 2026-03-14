@@ -318,24 +318,35 @@ tr:hover td{background:var(--surface2);}
           <option value="">All Categories</option>
           <option>Three Piece</option><option>Kurta Set</option><option>Lawn Suit</option><option>Chiffon</option><option>Embroidered</option>
         </select>
-        <select class="form-select" style="width:150px" id="invSort" onchange="renderInventory()">
+        <select class="form-select" style="width:170px" id="invSort" onchange="renderInventory()">
           <option value="default">Sort: Default</option>
           <option value="name_az">Name A→Z</option>
           <option value="name_za">Name Z→A</option>
           <option value="qty_asc">Stock ↑</option>
           <option value="qty_desc">Stock ↓</option>
-          <option value="price_asc">Price ↑</option>
-          <option value="price_desc">Price ↓</option>
-          <option value="date_new">Newest First</option>
-          <option value="date_old">Oldest First</option>
+          <option value="cost_asc">Cost Price ↑</option>
+          <option value="cost_desc">Cost Price ↓</option>
+          <option value="price_asc">Sell Price ↑</option>
+          <option value="price_desc">Sell Price ↓</option>
+          <option value="val_asc">Stock Value ↑</option>
+          <option value="val_desc">Stock Value ↓</option>
+          <option value="date_new">Stock Date: Newest</option>
+          <option value="date_old">Stock Date: Oldest</option>
+          <option value="fund_rev">Funded by Revenue</option>
+          <option value="fund_own">Funded by Owner</option>
         </select>
         <button class="btn btn-primary" onclick="openAddProduct()">＋ Add Product</button>
         <button class="btn btn-ghost" onclick="openRestockModal()">📦 Restock</button>
+        <button class="btn btn-ghost" onclick="openSupplierReturn()" title="Supplier Return/Exchange">↩️ Supplier Return</button>
       </div>
       <div id="invFinanceSummary" style="margin-bottom:16px"></div>
       <div class="card">
         <div class="card-header"><span class="card-title">📦 Inventory</span><span id="invCount" style="font-size:12px;color:var(--muted)"></span></div>
         <div class="tbl-wrap"><table id="inventoryTable"></table></div>
+      </div>
+      <div class="card" style="margin-top:18px">
+        <div class="card-header"><span class="card-title">↩️ Supplier Returns & Exchanges</span><button class="btn btn-ghost btn-sm" onclick="openSupplierReturn()">+ New</button></div>
+        <div class="tbl-wrap"><table id="invSupplierReturnsTable"></table></div>
       </div>
     </div>
 
@@ -365,9 +376,27 @@ tr:hover td{background:var(--surface2);}
                 </select>
               </div>
               <div class="form-group"><label class="form-label">Delivery</label>
-                <select class="form-select" id="saleDelivery"><option value="Walk-in (In-Store)">Walk-in / In-Store</option><option value="Home Delivery">Home Delivery</option><option value="In-Store Pickup">In-Store Pickup (Pre-order)</option><option value="Courier (Pathao)">Courier (Pathao)</option><option value="Courier (RedX)">Courier (RedX)</option><option value="Courier (Paperfly)">Courier (Paperfly)</option><option value="Courier (Sundarban)">Courier (Sundarban)</option></select>
+                <select class="form-select" id="saleDelivery" onchange="toggleDeliveryFields()"><option value="Walk-in (In-Store)">Walk-in / In-Store</option><option value="Home Delivery">Home Delivery</option><option value="In-Store Pickup">In-Store Pickup (Pre-order)</option><option value="Courier (Pathao)">Courier (Pathao)</option><option value="Courier (RedX)">Courier (RedX)</option><option value="Courier (Paperfly)">Courier (Paperfly)</option><option value="Courier (Sundarban)">Courier (Sundarban)</option></select>
               </div>
               <div class="form-group" id="dueAmountGroup" style="display:none"><label class="form-label">Amount Paid Now</label><input class="form-input" type="number" id="salePaidNow" placeholder="0" oninput="updateSalePrice()"/></div>
+              <!-- Delivery tracking fields — shown for non-walk-in -->
+              <div id="deliveryTrackingFields" style="display:none;grid-column:1/-1">
+                <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px;padding-top:8px;border-top:1px solid var(--border)">🚚 Delivery Tracking</div>
+                <div class="form-grid" style="margin:0">
+                  <div class="form-group"><label class="form-label">Delivery State / Area</label><input class="form-input" id="saleDeliveryState" placeholder="e.g. Dhaka, Sylhet..."/></div>
+                  <div class="form-group"><label class="form-label">Order Placed Date</label><input class="form-input" type="date" id="saleOrderPlacedDate"/></div>
+                  <div class="form-group"><label class="form-label">Packed Date</label><input class="form-input" type="date" id="salePackedDate"/></div>
+                  <div class="form-group"><label class="form-label">Shipped Date</label><input class="form-input" type="date" id="saleShippedDate"/></div>
+                  <div class="form-group form-full"><label class="form-label">Expected Delivery Date</label><input class="form-input" type="date" id="saleDeliveryDate"/></div>
+                </div>
+              </div>
+              <!-- Direct editable custom total -->
+              <div id="customTotalGroup" style="grid-column:1/-1;margin-top:4px">
+                <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--surface2);border-radius:9px;border:1px dashed var(--accent)">
+                  <span style="font-size:12px;font-weight:700;color:var(--accent);white-space:nowrap">✏️ Custom Total</span>
+                  <input class="form-input" type="number" id="saleCustomTotal" placeholder="Leave blank = auto-calculate" style="flex:1" oninput="updateSalePrice()"/>
+                </div>
+              </div>
               <div class="form-group form-full"><label class="form-label">Notes / WhatsApp</label><textarea class="form-textarea" id="saleNotes" placeholder="Delivery address, special requests..."></textarea></div>
             </div>
             <button class="btn btn-primary" style="width:100%;margin-top:14px;justify-content:center;padding:11px" onclick="confirmSale()">✓ Confirm Sale</button>
@@ -382,6 +411,10 @@ tr:hover td{background:var(--surface2);}
             <div class="card-header"><span class="card-title">⚡ Today's Sales</span></div>
             <div class="tbl-wrap"><table id="todaySalesTable" style="font-size:12px"></table></div>
           </div>
+          <div class="card" style="margin-top:18px">
+            <div class="card-header"><span class="card-title">↩️ Customer Returns / Exchanges</span><button class="btn btn-primary btn-sm" onclick="openAddReturn()">＋ Add</button></div>
+            <div id="salePageReturnList" style="padding:0 18px;max-height:260px;overflow-y:auto"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -392,12 +425,19 @@ tr:hover td{background:var(--surface2);}
         <div class="search-input-wrap"><span>🔍</span><input type="text" id="ordSearch" placeholder="Search orders..." oninput="renderOrders()"/></div>
         <input type="date" class="form-input" style="width:150px" id="ordDate" onchange="renderOrders()"/>
         <select class="form-select" style="width:140px" id="ordFilter" onchange="renderOrders()"><option value="">All</option><option>Pending</option><option>Packed</option><option>Shipped</option><option>Delivered</option><option>Cancelled</option><option>Due</option></select>
-        <select class="form-select" style="width:160px" id="ordSort" onchange="renderOrders()">
+        <select class="form-select" style="width:180px" id="ordSort" onchange="renderOrders()">
           <option value="newest">Sort: Newest</option>
           <option value="oldest">Oldest First</option>
           <option value="total_desc">Total ↓</option>
           <option value="total_asc">Total ↑</option>
+          <option value="qty_desc">Quantity ↓</option>
+          <option value="qty_asc">Quantity ↑</option>
+          <option value="date_desc">Date ↓</option>
+          <option value="date_asc">Date ↑</option>
           <option value="cust_az">Customer A→Z</option>
+          <option value="status">Order Status</option>
+          <option value="payment">Payment Method</option>
+          <option value="due_desc">Due Amount ↓</option>
         </select>
         <button class="btn btn-ghost" onclick="openBulkModal()">📦 Bulk Orders</button>
       </div>
@@ -442,10 +482,14 @@ tr:hover td{background:var(--surface2);}
       <div class="search-row" style="margin-bottom:18px">
         <input type="date" class="form-input" style="width:180px" id="cashDate" onchange="renderCashDrawer()"/>
         <button class="btn btn-ghost" onclick="document.getElementById('cashDate').value=today();renderCashDrawer()">Today</button>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="openCashEntry('add')">＋ Add Cash</button>
+          <button class="btn btn-ghost" style="border-color:var(--red);color:var(--red)" onclick="openCashEntry('deduct')">− Deduct Cash</button>
+        </div>
       </div>
       <div class="stats-grid" id="cashStats"></div>
       <div class="two-col">
-        <div class="card"><div class="card-header"><span class="card-title">🏦 Cash Transactions</span></div><div class="tbl-wrap"><table id="cashTable"></table></div></div>
+        <div class="card"><div class="card-header"><span class="card-title">🏦 All Transactions</span></div><div class="tbl-wrap"><table id="cashTable"></table></div></div>
         <div class="card"><div class="card-header"><span class="card-title">💳 Payment Breakdown</span></div><div class="card-body"><div class="chart-container"><canvas id="cashChart"></canvas></div></div></div>
       </div>
     </div>
@@ -581,20 +625,52 @@ tr:hover td{background:var(--surface2);}
 
 <!-- Supplier Return Modal -->
 <div class="overlay" id="supplierReturnModal">
-  <div class="modal">
-    <div class="modal-title">&#8617;&#65039; Supplier Return / Exchange</div>
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title">↩️ Supplier Return / Exchange</div>
+    <input type="hidden" id="srEditId" value=""/>
     <div class="form-grid">
       <div class="form-group form-full"><label class="form-label">Supplier</label><select class="form-select" id="srSupplier"><option value="">-- Select Supplier --</option></select></div>
-      <div class="form-group form-full"><label class="form-label">Product</label><select class="form-select" id="srProduct"><option value="">-- Select Product --</option></select></div>
+      <div class="form-group form-full"><label class="form-label">Product Returned</label><select class="form-select" id="srProduct"><option value="">-- Select Product --</option></select></div>
       <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" type="number" id="srQty" value="1" min="1"/></div>
-      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="srDate"/></div>
-      <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="srType"><option value="Return">Return (get money back)</option><option value="Exchange">Exchange (swap for new stock)</option></select></div>
-      <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="srStatus"><option value="Pending">Pending</option><option value="Resolved">Resolved</option></select></div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-select" id="srType" onchange="toggleSupplierReturnFields()">
+          <option value="Return">Return (get money back)</option>
+          <option value="Exchange">Exchange (swap for new stock)</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="srStatus">
+          <option value="Pending">Pending</option>
+          <option value="Resolved">Resolved</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Date Applied</label><input class="form-input" type="date" id="srDate"/></div>
+      <div class="form-group"><label class="form-label">Date Resolved / Completed</label><input class="form-input" type="date" id="srResolvedDate"/></div>
+      <!-- Return-only fields -->
+      <div class="form-group" id="srRefundValueGroup"><label class="form-label">Refund Value (BDT)</label><input class="form-input" type="number" id="srRefundValue" placeholder="Amount refunded by supplier"/></div>
+      <!-- Exchange-only fields -->
+      <div class="form-group" id="srExchangeProductGroup" style="display:none"><label class="form-label">Exchanged With (Product Name)</label><input class="form-input" id="srExchangeProduct" placeholder="Name of product received in exchange"/></div>
+      <div class="form-group" id="srExchangePriceGroup" style="display:none"><label class="form-label">Exchange Product Price (BDT)</label><input class="form-input" type="number" id="srExchangePrice" placeholder="0" oninput="calcSrExchangeDiff()"/></div>
+      <div class="form-group" id="srExchangeDateGroup" style="display:none"><label class="form-label">Exchange Applied Date</label><input class="form-input" type="date" id="srExchangeAppliedDate"/></div>
+      <div class="form-group" id="srExchangedDateGroup" style="display:none"><label class="form-label">Exchange Received Date</label><input class="form-input" type="date" id="srExchangedDate"/></div>
+      <div class="form-group form-full" id="srDiffSection" style="display:none">
+        <div id="srDiffBanner" style="border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
+        <div class="form-grid" style="margin:0">
+          <div class="form-group"><label class="form-label">Difference Amount (BDT)</label><input class="form-input" type="number" id="srPriceDiff" placeholder="0" oninput="onSrDiffChange()"/></div>
+          <div class="form-group">
+            <label class="form-label" id="srDiffStatusLabel">Payment Status</label>
+            <select class="form-select" id="srDiffStatus">
+              <option value="Paid">✅ We Paid Supplier</option>
+              <option value="Due">⏳ We Owe Supplier</option>
+            </select>
+          </div>
+        </div>
+      </div>
       <div class="form-group form-full"><label class="form-label">Reason / Notes</label><textarea class="form-textarea" id="srReason" placeholder="Defective item, wrong size, quality issue..."></textarea></div>
     </div>
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('supplierReturnModal')">Cancel</button>
-      <button class="btn btn-danger" onclick="saveSupplierReturn()">Submit Return</button>
+      <button class="btn btn-danger" onclick="saveSupplierReturn()">Submit</button>
     </div>
   </div>
 </div>
@@ -699,8 +775,13 @@ tr:hover td{background:var(--surface2);}
   <div class="modal">
     <div class="modal-title" id="returnModalTitle">↩️ Add Return / Exchange</div><input type="hidden" id="rReturnId" value=""/>
     <div class="form-grid">
-      <div class="form-group"><label class="form-label">Customer Name</label><input class="form-input" id="rCustomer" placeholder="Customer name"/></div>
+      <div class="form-group"><label class="form-label">Customer Name</label><input class="form-input" id="rCustomer" placeholder="Customer name" list="rCustSuggest" oninput="onReturnCustomerInput()"/><datalist id="rCustSuggest"></datalist></div>
       <div class="form-group"><label class="form-label">Return Date</label><input class="form-input" type="date" id="rDate"/></div>
+      <div class="form-group form-full"><label class="form-label">Select Sale (optional — auto-fills product)</label>
+        <select class="form-select" id="rSaleSelect" onchange="onReturnSaleSelect()">
+          <option value="">— Select from customer's orders —</option>
+        </select>
+      </div>
       <div class="form-group"><label class="form-label">Returned Product</label><select class="form-select" id="rProduct" onchange="updateReturnPrice()"></select></div>
       <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" type="number" id="rQty" value="1" min="1"/></div>
       <div class="form-group"><label class="form-label">Type</label><select class="form-select" id="rType" onchange="toggleExchangeFields()"><option>Return (Refund)</option><option>Exchange</option></select></div>
@@ -726,8 +807,20 @@ tr:hover td{background:var(--surface2);}
             <select class="form-select" id="rExchangeProductId" onchange="updateExchangePrice()"></select>
           </div>
           <div class="form-group"><label class="form-label">Exchange Item Name</label><input class="form-input" id="rExchangeItem" placeholder="Or type custom item name"/></div>
-          <div class="form-group"><label class="form-label">Exchange Item Price (BDT)</label><input class="form-input" type="number" id="rExchangePrice" placeholder="0"/></div>
-          <div class="form-group form-full"><label class="form-label">Price Difference (+ customer pays / - you refund)</label><input class="form-input" type="number" id="rPriceDiff" placeholder="0 (positive = customer pays extra)"/></div>
+          <div class="form-group"><label class="form-label">Exchange Item Price (BDT)</label><input class="form-input" type="number" id="rExchangePrice" placeholder="0" oninput="calcExchangeDiff()"/></div>
+          <div class="form-group form-full" id="rDiffSection" style="display:none">
+            <div id="rDiffBanner" style="border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px;flex-wrap:wrap"></div>
+            <div class="form-grid" style="margin:0">
+              <div class="form-group"><label class="form-label">Difference Amount (BDT)</label><input class="form-input" type="number" id="rPriceDiff" placeholder="0" oninput="onExchangeDiffChange()"/></div>
+              <div class="form-group" id="rDiffStatusGroup">
+                <label class="form-label" id="rDiffStatusLabel">Customer Status</label>
+                <select class="form-select" id="rDiffStatus">
+                  <option value="Paid">✅ Customer Paid</option>
+                  <option value="Due">⏳ Customer Owes (Due)</option>
+                </select>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -773,6 +866,67 @@ tr:hover td{background:var(--surface2);}
   </div>
 </div>
 
+<!-- Cash Entry Modal -->
+<div class="overlay" id="cashEntryModal">
+  <div class="modal">
+    <div class="modal-title" id="cashEntryTitle">💵 Add Cash</div>
+    <input type="hidden" id="cashEntryType" value="add"/>
+    <input type="hidden" id="cashEntryEditId" value=""/>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Amount (BDT)</label><input class="form-input" type="number" id="cashEntryAmt" placeholder="0" min="1"/></div>
+      <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="cashEntryDate"/></div>
+      <div class="form-group form-full"><label class="form-label">Description</label><input class="form-input" id="cashEntryDesc" placeholder="e.g. Capital added, received from partner..."/></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('cashEntryModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCashEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Supplier Order Modal -->
+<div class="overlay" id="supplierOrderModal">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-title" id="supOrderTitle">📦 Add Supplier Order</div>
+    <input type="hidden" id="supOrderEditId" value=""/>
+    <div class="form-grid">
+      <div class="form-group form-full"><label class="form-label">Supplier</label><select class="form-select" id="soSupplier"><option value="">-- Select Supplier --</option></select></div>
+      <div class="form-group form-full"><label class="form-label">Product Name / Description</label><input class="form-input" id="soProductName" placeholder="e.g. Lawn Suit 3 pcs lot, Kameez..."/></div>
+      <div class="form-group"><label class="form-label">Quantity</label><input class="form-input" type="number" id="soQty" value="1" min="1"/></div>
+      <div class="form-group"><label class="form-label">Unit Price (BDT)</label><input class="form-input" type="number" id="soUnitPrice" placeholder="0" oninput="updateSupplierOrderTotal()"/></div>
+      <div class="form-group"><label class="form-label">Total Value (BDT)</label><input class="form-input" type="number" id="soTotalValue" placeholder="0" readonly style="background:var(--surface2)"/></div>
+      <div class="form-group"><label class="form-label">Payment Type</label>
+        <select class="form-select" id="soPaymentType" onchange="toggleSupplierOrderPayFields()">
+          <option value="cod">Cash on Delivery (COD)</option>
+          <option value="advance">Full Advance</option>
+          <option value="partial">Partial Advance</option>
+        </select>
+      </div>
+      <div class="form-group" id="soAdvancePaidGroup" style="display:none"><label class="form-label">Advance Paid (BDT)</label><input class="form-input" type="number" id="soAdvancePaid" placeholder="0"/></div>
+      <div class="form-group" id="soCODAmountGroup"><label class="form-label">COD Amount (BDT)</label><input class="form-input" type="number" id="soCODAmount" placeholder="0"/></div>
+      <div class="form-group"><label class="form-label">Status</label>
+        <select class="form-select" id="soStatus">
+          <option value="Ordered">Ordered / Pending</option>
+          <option value="Accepted">Order Accepted</option>
+          <option value="Sent">Sent by Supplier</option>
+          <option value="Received">Received</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Order Date</label><input class="form-input" type="date" id="soOrderDate"/></div>
+      <div class="form-group"><label class="form-label">Accepted Date</label><input class="form-input" type="date" id="soAcceptedDate"/></div>
+      <div class="form-group"><label class="form-label">Sent Date</label><input class="form-input" type="date" id="soSentDate"/></div>
+      <div class="form-group"><label class="form-label">Received Date</label><input class="form-input" type="date" id="soReceivedDate"/></div>
+      <div class="form-group"><label class="form-label">Cancelled Date</label><input class="form-input" type="date" id="soCancelledDate"/></div>
+      <div class="form-group form-full"><label class="form-label">Notes</label><textarea class="form-textarea" id="soNotes" placeholder="Any special notes..."></textarea></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('supplierOrderModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveSupplierOrder()">Save Order</button>
+    </div>
+  </div>
+</div>
+
 <!-- Owner Draw Modal -->
 <div class="overlay" id="ownerDrawModal">
   <div class="modal">
@@ -780,14 +934,23 @@ tr:hover td{background:var(--surface2);}
     <input type="hidden" id="drawEditId" value=""/>
     <div class="form-grid">
       <div class="form-group"><label class="form-label">Type</label>
-        <select class="form-select" id="drawType">
+        <select class="form-select" id="drawType" onchange="toggleDrawProductField()">
           <option value="cash">Cash Withdrawal</option>
-          <option value="item">Item Taken</option>
+          <option value="item">Item Taken (General)</option>
+          <option value="product">Product from Inventory</option>
           <option value="expense">Personal Expense Paid by Business</option>
           <option value="salary">Owner Salary</option>
         </select>
       </div>
       <div class="form-group"><label class="form-label">Amount / Value (BDT)</label><input class="form-input" type="number" id="drawAmount" placeholder="0"/></div>
+      <div class="form-group form-full" id="drawProductGroup" style="display:none">
+        <label class="form-label">Product from Inventory</label>
+        <select class="form-select" id="drawProductId" onchange="onDrawProductSelect()"><option value="">-- Select Product --</option></select>
+      </div>
+      <div class="form-group" id="drawProductQtyGroup" style="display:none">
+        <label class="form-label">Quantity Taken</label>
+        <input class="form-input" type="number" id="drawProductQty" value="1" min="1" oninput="onDrawProductSelect()"/>
+      </div>
       <div class="form-group form-full"><label class="form-label">Description</label><input class="form-input" id="drawDesc" placeholder="e.g. Took 2 pcs of Lawn Suit, Paid personal bill..."/></div>
       <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="drawDate"/></div>
     </div>
@@ -829,7 +992,10 @@ let store = {
   nextId:1,
   productSeq:1,
   actionHistory:[],
-  ownerDraws:[]
+  ownerDraws:[],
+  cashInHand:0,
+  cashTransactions:[],
+  supplierOrders:[]
 };
 function saveStore(){
   // Stamp our write so listener can ignore echo
@@ -853,12 +1019,55 @@ const fmt=n=>'৳ '+Number(n||0).toLocaleString('en-BD');
 const today=()=>new Date().toISOString().split('T')[0];
 const fmtDate=d=>new Date(d).toLocaleDateString('en-BD',{day:'2-digit',month:'short',year:'numeric'});
 const getProduct=id=>store.products.find(p=>p.id==id);
+
+// ===== CENTRAL STATS — single source of truth for all pages =====
+function getSaleNum(gid){
+  const grpMap={};
+  store.orders.forEach(o=>{const g=o.saleGroup||o.id;if(!grpMap[g])grpMap[g]=g;});
+  const sorted=Object.keys(grpMap).map(Number).sort((a,b)=>a-b);
+  const idx=sorted.indexOf(Number(gid));
+  return idx>=0?idx+1:1;
+}
+function calcStats(){
+  const grossRev = store.orders.reduce((s,o)=>s+o.qty*(o.sell||0)-(o.discount||0),0);
+  // Customer refunds (return type)
+  const custRefundsPaid = (store.returns||[]).filter(r=>r.refundAmount>0&&r.refundStatus==='Refunded').reduce((s,r)=>s+(r.refundAmount||0),0);
+  const custRefundsPending = (store.returns||[]).filter(r=>r.refundAmount>0&&r.refundStatus!=='Refunded').reduce((s,r)=>s+(r.refundAmount||0),0);
+  // Customer exchange diff: customer paid us more (diffStatus=Paid) = cash IN; we refunded customer (diffStatus=Refunded) = cash OUT
+  const custExchDiffIn = (store.returns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)>0&&r.diffStatus==='Paid').reduce((s,r)=>s+(r.priceDiff||0),0);
+  const custExchDiffOut = (store.returns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)<0&&r.diffStatus==='Refunded').reduce((s,r)=>s+Math.abs(r.priceDiff||0),0);
+  const exchDiffDue = (store.returns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)>0&&r.diffStatus==='Due').reduce((s,r)=>s+(r.priceDiff||0),0);
+  const exchRefundPending = (store.returns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)<0&&r.diffStatus==='Refund Pending').reduce((s,r)=>s+Math.abs(r.priceDiff||0),0);
+  // Supplier returns resolved = money back from supplier
+  const supRefundsReceived = (store.supplierReturns||[]).filter(r=>r.type==='Return'&&r.status==='Resolved').reduce((s,r)=>s+(r.refundValue||0),0);
+  // Supplier exchange diff: we paid supplier more (diffStatus=Paid) = cash OUT; supplier paid us back (diffStatus=Received) = cash IN
+  const supExchDiffOut = (store.supplierReturns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)>0&&r.diffStatus==='Paid').reduce((s,r)=>s+(r.priceDiff||0),0);
+  const supExchDiffIn = (store.supplierReturns||[]).filter(r=>r.type==='Exchange'&&(r.priceDiff||0)<0&&r.diffStatus==='Received').reduce((s,r)=>s+Math.abs(r.priceDiff||0),0);
+  // Supplier orders
+  const supAdvancePaid = (store.supplierOrders||[]).reduce((s,o)=>s+(o.advancePaid||0),0);
+  const supCODPaid = (store.supplierOrders||[]).filter(o=>o.status==='Received').reduce((s,o)=>s+(o.codAmount||0),0);
+  const netRev = grossRev - custRefundsPaid - custExchDiffOut + custExchDiffIn + supRefundsReceived + supExchDiffIn - supExchDiffOut;
+  const totalCost = store.orders.reduce((s,o)=>s+o.qty*(o.cost||0),0);
+  const totalExp = (store.expenses||[]).reduce((s,e)=>s+e.amt,0);
+  const totalDrawn = (store.ownerDraws||[]).reduce((s,d)=>s+d.amount,0);
+  const revenueStockCost = store.products.filter(p=>(p.fundSource||'revenue')==='revenue').reduce((s,p)=>{
+    const sold = store.orders.filter(o=>o.product===p.id).reduce((a,o)=>a+o.qty,0);
+    return s + (p.qty+sold)*(p.cost||0);
+  },0);
+  const totalDue = store.orders.reduce((s,o)=>s+(o.dueRemaining||0),0);
+  const manualAdded = (store.cashTransactions||[]).filter(t=>t.type==='add').reduce((s,t)=>s+t.amount,0);
+  const manualDeducted = (store.cashTransactions||[]).filter(t=>t.type==='deduct').reduce((s,t)=>s+t.amount,0);
+  const moneyInHand = netRev - revenueStockCost - totalExp - totalDrawn + manualAdded - manualDeducted - supAdvancePaid - supCODPaid;
+  const grossProfit = grossRev - custRefundsPaid - totalCost;
+  const netProfit = grossProfit - totalExp;
+  return {grossRev,netRev,custRefundsPaid,custRefundsPending,supRefundsReceived,supAdvancePaid,supCODPaid,totalCost,totalExp,totalDrawn,revenueStockCost,totalDue,moneyInHand,grossProfit,netProfit,manualAdded,manualDeducted,custExchDiffIn,custExchDiffOut,supExchDiffIn,supExchDiffOut,exchDiffDue,exchRefundPending};
+}
 const avatarColors=['#c9683a','#4a9e6e','#3a6bc9','#c94a4a','#d4a017','#8a4ac9','#3aaac9','#c94a8a'];
 const custColor=name=>{let h=0;for(let c of name)h+=c.charCodeAt(0);return avatarColors[h%avatarColors.length];};
 const custInitial=name=>name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
 
 // ===== NAVIGATION =====
-const pageTitles={dashboard:'Dashboard',settings:'Settings',inventory:'Inventory',sales:'New Sale',orders:'All Orders',finance:'Profit & Loss',expenses:'Expenses',dues:'Due / Credit Tracker',cashDrawer:'Cash Drawer',reports:'Sales Reports',discounts:'Discounts & Coupons',customers:'Customers',leaderboard:'Top Customers',returns:'Returns & Exchanges',alerts:'Stock Alerts',insights:'Business Insights',suppliers:'Suppliers / Vendors',blacklist:'Blacklisted Customers',courier:'Courier Cost Calculator',analytics:'Advanced Analytics',history:'Action History',ownerDraw:"Owner's Draw"};
+const pageTitles={dashboard:'Dashboard',settings:'Settings',inventory:'Inventory',sales:'New Sale',orders:'All Orders',finance:'Profit & Loss',expenses:'Expenses',dues:'Due / Credit Tracker',cashDrawer:'Cash Drawer',reports:'Sales Reports',discounts:'Discounts & Coupons',customers:'Customers',leaderboard:'Top Customers',returns:'Returns & Exchanges',alerts:'Stock Alerts',insights:'Business Insights',suppliers:'Suppliers / Vendors',supplierOrders:'Supplier Orders',blacklist:'Blacklisted Customers',courier:'Courier Cost Calculator',analytics:'Advanced Analytics',history:'Action History',ownerDraw:"Owner's Draw"};
 
 function showPage(page,el){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -901,17 +1110,13 @@ function makeChart(id,type,data,options){
 // ===== DASHBOARD =====
 function renderDashboard(){
   updateBadges();
-  const totalRev=store.orders.reduce((s,o)=>s+(o.qty*o.sell-o.discount),0);
-  const totalCost=store.orders.reduce((s,o)=>s+o.qty*o.cost,0);
-  const totalExp=store.expenses.reduce((s,e)=>s+e.amt,0);
-  const netProfit=totalRev-totalCost-totalExp;
-  const totalDue=store.orders.reduce((s,o)=>s+(o.dueRemaining||0),0);
+  const {grossRev,netRev,custRefundsPaid,netProfit,totalDue}=calcStats();
   const invVal=store.products.reduce((s,p)=>s+p.qty*p.cost,0);
   const custCount=[...new Set(store.orders.map(o=>o.customer))].length;
 
   document.getElementById('dashStats').innerHTML=`
-    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Total Revenue</div><div class="stat-value">${fmt(totalRev)}</div><div class="stat-sub">${store.orders.length} orders</div></div>
-    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Net Profit</div><div class="stat-value" style="color:${netProfit>=0?'var(--green)':'var(--red)'}">${fmt(netProfit)}</div><div class="stat-sub">After expenses</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Net Revenue</div><div class="stat-value">${fmt(netRev)}</div><div class="stat-sub">${store.orders.length} orders${custRefundsPaid>0?` · −${fmt(custRefundsPaid)} refunds`:''}</div></div>
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Net Profit</div><div class="stat-value" style="color:${netProfit>=0?'var(--green)':'var(--red)'}">${fmt(netProfit)}</div><div class="stat-sub">After expenses &amp; refunds</div></div>
     <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Stock Value</div><div class="stat-value">${fmt(invVal)}</div><div class="stat-sub">${store.products.reduce((s,p)=>s+p.qty,0)} items</div></div>
     <div class="stat-card"><div class="stat-icon">👩</div><div class="stat-label">Customers</div><div class="stat-value">${custCount}</div><div class="stat-sub">${store.orders.filter(o=>o.dueRemaining>0).length} with dues</div></div>
   `;
@@ -960,75 +1165,36 @@ function renderInventory(){
   else if(invSortVal==='name_za') filtered.sort((a,b)=>b.name.localeCompare(a.name));
   else if(invSortVal==='qty_asc') filtered.sort((a,b)=>a.qty-b.qty);
   else if(invSortVal==='qty_desc') filtered.sort((a,b)=>b.qty-a.qty);
+  else if(invSortVal==='cost_asc') filtered.sort((a,b)=>a.cost-b.cost);
+  else if(invSortVal==='cost_desc') filtered.sort((a,b)=>b.cost-a.cost);
   else if(invSortVal==='price_asc') filtered.sort((a,b)=>a.sell-b.sell);
   else if(invSortVal==='price_desc') filtered.sort((a,b)=>b.sell-a.sell);
+  else if(invSortVal==='val_asc') filtered.sort((a,b)=>a.qty*a.cost-b.qty*b.cost);
+  else if(invSortVal==='val_desc') filtered.sort((a,b)=>b.qty*b.cost-a.qty*a.cost);
   else if(invSortVal==='date_new') filtered.sort((a,b)=>(b.stockDate||'').localeCompare(a.stockDate||''));
   else if(invSortVal==='date_old') filtered.sort((a,b)=>(a.stockDate||'').localeCompare(b.stockDate||''));
+  else if(invSortVal==='fund_rev') filtered.sort((a,b)=>((a.fundSource||'revenue')==='revenue'?0:1)-((b.fundSource||'revenue')==='revenue'?0:1));
+  else if(invSortVal==='fund_own') filtered.sort((a,b)=>((a.fundSource||'revenue')==='owner'?0:1)-((b.fundSource||'revenue')==='owner'?0:1));
   document.getElementById('invCount').textContent=`${filtered.length} products`;
 
   // ── Finance Summary ──────────────────────────────────────────────
-  // Total revenue from all completed sales
-  const totalRevenue = store.orders.reduce((s,o)=>s + o.qty*o.sell - o.discount, 0);
-
-  // Total cost of stock that was purchased using business revenue
-  const revenueStockCost = store.products
-    .filter(p => (p.fundSource||'revenue') === 'revenue')
-    .reduce((s,p) => {
-      // original total cost = initial qty at purchase × cost price
-      // We approximate with current stock + units already sold
-      const unitsSold = store.orders.filter(o=>o.product===p.id).reduce((a,o)=>a+o.qty, 0);
-      const totalUnits = (p.qty||0) + unitsSold;
-      return s + totalUnits * (p.cost||0);
-    }, 0);
-
-  // Also add restock costs for revenue-funded products
-  const restockRevCost = (store.restockLog||[]).filter(r=>{
-    const p = getProduct(r.productId);
-    return p && (p.fundSource||'revenue')==='revenue' && r.cost;
-  }).reduce((s,r)=>s + r.qty*(r.cost||0), 0);
-
-  // Total expenses (business outgoings not counted in COGS)
-  const totalExpenses = store.expenses.reduce((s,e)=>s+e.amt, 0);
-
-  // Owner draws
-  const totalDrawn = (store.ownerDraws||[]).reduce((s,d)=>s+d.amount, 0);
-
-  // Money in hand = Revenue - Stock cost (revenue-funded) - Expenses - Owner draws - pending dues
-  const totalDue = store.orders.reduce((s,o)=>s+(o.dueRemaining||0), 0);
-  const moneyInHand = totalRevenue - revenueStockCost - totalExpenses - totalDrawn;
+  const {grossRev:totalRevenue,netRev,custRefundsPaid,custRefundsPending,supRefundsReceived,revenueStockCost,totalExp:totalExpenses,totalDrawn,totalDue,moneyInHand,supAdvancePaid,supCODPaid}=calcStats();
 
   const summaryEl = document.getElementById('invFinanceSummary');
   if(summaryEl){
     summaryEl.innerHTML = `
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">💵</div>
-          <div class="stat-label">Total Revenue</div>
-          <div class="stat-value" style="color:var(--accent)">${fmt(totalRevenue)}</div>
-          <div class="stat-sub">All sales collected</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🏷️</div>
-          <div class="stat-label">Revenue Used for Stock</div>
-          <div class="stat-value" style="color:var(--red)">${fmt(revenueStockCost)}</div>
-          <div class="stat-sub">Business-funded products</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🧮</div>
-          <div class="stat-label">Expenses Paid</div>
-          <div class="stat-value" style="color:var(--red)">${fmt(totalExpenses + totalDrawn)}</div>
-          <div class="stat-sub">Expenses + Owner draws</div>
-        </div>
-        <div class="stat-card" style="border:2px solid var(--accent)">
-          <div class="stat-icon">💰</div>
-          <div class="stat-label">Money in Hand</div>
-          <div class="stat-value" style="color:${moneyInHand>=0?'var(--green)':'var(--red)'}; font-size:22px">${fmt(moneyInHand)}</div>
-          <div class="stat-sub" style="color:var(--muted)">${totalDue>0?'Excl. '+fmt(totalDue)+' due':'All dues cleared'}</div>
-        </div>
+        <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Gross Revenue</div><div class="stat-value" style="color:var(--accent)">${fmt(totalRevenue)}</div><div class="stat-sub">${custRefundsPaid>0?`−${fmt(custRefundsPaid)} refunds`:'All sales'}</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Net Revenue</div><div class="stat-value" style="color:var(--green)">${fmt(netRev)}</div><div class="stat-sub">After refunds${supRefundsReceived>0?` +${fmt(supRefundsReceived)} sup.refunds`:''}</div></div>
+        <div class="stat-card"><div class="stat-icon">🏷️</div><div class="stat-label">Stock Cost</div><div class="stat-value" style="color:var(--red)">${fmt(revenueStockCost)}</div><div class="stat-sub">Revenue-funded products</div></div>
+        <div class="stat-card"><div class="stat-icon">🧮</div><div class="stat-label">Expenses+Draws</div><div class="stat-value" style="color:var(--red)">${fmt(totalExpenses+totalDrawn)}</div><div class="stat-sub">${supAdvancePaid+supCODPaid>0?`+${fmt(supAdvancePaid+supCODPaid)} supplier paid`:''}</div></div>
+        <div class="stat-card" style="border:2px solid var(--accent)"><div class="stat-icon">💰</div><div class="stat-label">Money in Hand</div><div class="stat-value" style="color:${moneyInHand>=0?'var(--green)':'var(--red)'}; font-size:22px">${fmt(moneyInHand)}</div><div class="stat-sub">${totalDue>0?'Excl. '+fmt(totalDue)+' due':'All dues cleared'}</div></div>
+        ${custRefundsPending>0?`<div class="stat-card" style="border:1px solid var(--yellow)"><div class="stat-icon">⏳</div><div class="stat-label">Pending Refunds</div><div class="stat-value" style="color:var(--yellow)">${fmt(custRefundsPending)}</div><div class="stat-sub">Owed to customers</div></div>`:''}
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;font-size:11px;color:var(--muted);margin-top:4px">
-        💡 <strong>Money in Hand</strong> = Revenue <strong>${fmt(totalRevenue)}</strong> − Stock (revenue-funded) <strong>${fmt(revenueStockCost)}</strong> − Expenses+Draws <strong>${fmt(totalExpenses+totalDrawn)}</strong> = <strong style="color:${moneyInHand>=0?'var(--green)':'var(--red)'}">${fmt(moneyInHand)}</strong>
-        ${totalDue>0?` &nbsp;|&nbsp; 💳 <strong>${fmt(totalDue)}</strong> still owed by customers`:''}
+        💡 <strong>Net Revenue</strong> ${fmt(netRev)} − Stock ${fmt(revenueStockCost)} − Exp+Draws ${fmt(totalExpenses+totalDrawn)} = <strong style="color:${moneyInHand>=0?'var(--green)':'var(--red)'}">${fmt(moneyInHand)}</strong>
+        ${totalDue>0?` &nbsp;|&nbsp; 💳 <strong>${fmt(totalDue)}</strong> still owed`:''}
+        ${custRefundsPending>0?` &nbsp;|&nbsp; ⏳ <strong>${fmt(custRefundsPending)}</strong> refunds pending`:''}
       </div>`;
   }
   // ────────────────────────────────────────────────────────────────
@@ -1038,6 +1204,17 @@ function renderInventory(){
     const pSerial = filtered.indexOf(p)+1;
     return `<tr><td style="color:var(--muted);font-size:10px">#${pSerial}</td><td><strong>${p.name}</strong>${p.desc?`<div style="font-size:10px;color:var(--muted)">${p.desc}</div>`:''}</td><td><span class="badge badge-orange">${p.cat}</span></td><td><span class="badge size-${p.size.toLowerCase().replace(' ','')}">${p.size}</span></td><td>${p.color}</td><td><strong style="font-size:15px">${p.qty}</strong></td><td style="color:var(--muted)">${fmt(p.cost)}</td><td><strong>${fmt(p.sell)}</strong></td><td>${fmt(p.qty*p.cost)}</td><td style="font-size:11px;color:var(--muted)">${p.supplierName||'&mdash;'}</td><td style="font-size:11px">${p.fundSource==='owner'?'<span class="badge badge-blue">👤 Owner</span>':'<span class="badge badge-green">💼 Revenue</span>'}</td><td style="font-size:11px;color:var(--muted)">${p.stockDate?fmtDate(p.stockDate):'&mdash;'}</td><td><span class="badge ${sc}">${st}</span></td><td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="editProduct(${p.id})">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteProduct(${p.id})" style="margin-left:3px">🗑</button></td></tr>`;
   }).join('')}</tbody>`:'<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:24px">No products yet. Add your first product!</td></tr>';
+
+  // Render supplier returns table in inventory page
+  const invSRTable=document.getElementById('invSupplierReturnsTable');
+  if(invSRTable){
+    const sr=[...store.supplierReturns||[]].sort((a,b)=>new Date(b.date)-new Date(a.date));
+    invSRTable.innerHTML=sr.length?`<thead><tr><th>Date</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Type</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody>${sr.map(r=>{
+      const typeClass=r.type==='Exchange'?'badge-blue':'badge-orange';
+      const statClass=r.status==='Resolved'?'badge-green':'badge-yellow';
+      return `<tr><td style="font-size:11px">${fmtDate(r.date)}</td><td style="font-size:12px">${r.supplierName}</td><td style="font-size:12px">${r.productName}</td><td><span class="badge badge-red">-${r.qty}</span></td><td><span class="badge ${typeClass}">${r.type}</span></td><td><span class="badge ${statClass}" style="cursor:pointer" onclick="toggleSupplierReturnStatus(${r.id})">${r.status}</span></td><td style="font-size:11px;color:var(--muted)">${r.reason||'—'}</td><td><button class="btn btn-danger btn-sm" onclick="deleteSupplierReturn(${r.id})">🗑</button></td></tr>`;
+    }).join('')}</tbody>`:'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No supplier returns logged yet</td></tr>';
+  }
 }
 
 function openAddProduct(){
@@ -1172,7 +1349,12 @@ function renderSalesPage(){
   renderSaleItemRows();
   document.getElementById('custSuggest').innerHTML=[...new Set(store.orders.map(o=>o.customer))].map(n=>`<option value="${n}">`).join('');
   document.getElementById('rProduct').innerHTML=store.products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  // Reset delivery fields
+  const ctEl=document.getElementById('saleCustomTotal');
+  if(ctEl) ctEl.value='';
+  toggleDeliveryFields();
   renderTodaySales();
+  renderSalePageReturns();
 }
 
 function toggleDueField(){
@@ -1202,10 +1384,12 @@ function updateSalePrice(){
     const isCustom=sellPrice!==p.sell;
     return `<div style="display:flex;justify-content:space-between;font-size:12px"><span style="color:var(--muted);flex:1">${p.name} × ${qty}${isCustom?` <span style="color:var(--accent);font-size:10px">(${fmt(sellPrice)})</span>`:''}</span><span>${fmt(lineTotal)}</span>${p.qty<qty?` <span style="color:var(--red);font-size:10px;margin-left:4px">⚠️low</span>`:''}</div>`;
   });
+  const customTotalVal=+document.getElementById('saleCustomTotal')?.value||0;
   let disc=0;
   if(dc) disc=dc.type==='percent'?subtotal*(dc.value/100):dc.value;
-  const total=subtotal-disc;
-  const profit=total-totalCost-disc;
+  const calcTotal=subtotal-disc;
+  const total=customTotalVal>0?customTotalVal:calcTotal;
+  const profit=total-totalCost;
   const dueAmt=isDue&&paidNow!==null?total-paidNow:0;
   document.getElementById('saleSummary').innerHTML=`<div style="display:flex;flex-direction:column;gap:7px">
     ${rows.join('')}
@@ -1228,6 +1412,15 @@ function confirmSale(){
   const dCode=document.getElementById('saleDiscount').value.trim().toUpperCase();
   const delivery=document.getElementById('saleDelivery').value;
   const notes=document.getElementById('saleNotes').value;
+  // Delivery tracking
+  const deliveryState=document.getElementById('saleDeliveryState')?.value.trim()||'';
+  const orderPlacedDate=document.getElementById('saleOrderPlacedDate')?.value||'';
+  const packedDateVal=document.getElementById('salePackedDate')?.value||'';
+  const shippedDateVal=document.getElementById('saleShippedDate')?.value||'';
+  const deliveryDateVal=document.getElementById('saleDeliveryDate')?.value||'';
+  // Custom total (direct input; 0 = auto-calculate)
+  const customTotal=+document.getElementById('saleCustomTotal')?.value||0;
+
   const validItems=saleItems.filter(it=>it.pid>0).map(it=>{
     const p=getProduct(it.pid);
     const sellPrice=(it.customPrice!==undefined&&it.customPrice!=='')?+it.customPrice:p?.sell||0;
@@ -1241,10 +1434,13 @@ function confirmSale(){
   const dc=store.discounts.find(d=>d.code===dCode&&d.status==='active');
   let disc=0;
   if(dc){disc=dc.type==='percent'?subtotal*(dc.value/100):dc.value;dc.used++;}
-  const total=subtotal-disc;
+  const calcTotal=subtotal-disc;
+  const total=customTotal>0?customTotal:calcTotal;
   const dueRemaining=isDue?total-paidNow:0;
   // Create one order per item (keeps existing order structure intact)
   const firstOrderId=store.nextId+1;
+  const isWalkIn=delivery==='Walk-in (In-Store)';
+  const initStatus=isWalkIn?'Delivered':'Pending';
   validItems.forEach(({p,qty,sellPrice},idx)=>{
     p.qty-=qty;
     const lineTotal=sellPrice*qty;
@@ -1252,15 +1448,24 @@ function confirmSale(){
     const lineDue=idx===0?dueRemaining:0;
     const linePaid=idx===0?(isDue?paidNow:total):lineTotal;
     const orderId=++store.nextId;
-    var isWalkIn=delivery==='Walk-in (In-Store)';
-    var initStatus=isWalkIn?'Delivered':'Pending';
-    store.orders.push({id:orderId,customer:cust,phone,product:p.id,productName:p.name,productSize:p.size,productColor:p.color,qty,sell:sellPrice,cost:p.cost,discount:lineDisc,payment,delivery,date,notes,status:initStatus,receivedDate:date,packedDate:isWalkIn?date:null,shippedDate:isWalkIn?date:null,deliveredDate:isWalkIn?date:null,cancelledDate:null,dueRemaining:lineDue,paidNow:linePaid,duePayments:[],saleGroup:firstOrderId});
+    store.orders.push({
+      id:orderId,customer:cust,phone,product:p.id,productName:p.name,productSize:p.size,productColor:p.color,
+      qty,sell:sellPrice,cost:p.cost,discount:lineDisc,payment,delivery,date,notes,status:initStatus,
+      receivedDate:orderPlacedDate||date,
+      packedDate:isWalkIn?date:(packedDateVal||null),
+      shippedDate:isWalkIn?date:(shippedDateVal||null),
+      deliveredDate:isWalkIn?date:(deliveryDateVal||null),
+      cancelledDate:null,
+      dueRemaining:lineDue,paidNow:linePaid,duePayments:[],saleGroup:firstOrderId,
+      deliveryState,customTotal:idx===0?customTotal:0
+    });
   });
   logAction('sale','Sale to: '+cust,validItems.length+' item(s) | total=৳'+total+(dueRemaining?', due=৳'+dueRemaining:''));
   saveStore();
   showInvoice(firstOrderId);
   ['saleCustomer','salePhone','saleNotes','saleDiscount','salePaidNow'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   document.getElementById('saleDate').value=today();
+  const ctEl=document.getElementById('saleCustomTotal');if(ctEl)ctEl.value='';
   saleItems=[{pid:0,qty:1,customPrice:''}];
   renderSalesPage();updateBadges();
 }
@@ -1339,7 +1544,14 @@ function renderOrders(){
   else if(ordSortVal==='oldest') groups.sort((a,b)=>a[0].id-b[0].id);
   else if(ordSortVal==='total_desc') groups.sort((a,b)=>b.reduce((s,o)=>s+o.qty*o.sell-o.discount,0)-a.reduce((s,o)=>s+o.qty*o.sell-o.discount,0));
   else if(ordSortVal==='total_asc') groups.sort((a,b)=>a.reduce((s,o)=>s+o.qty*o.sell-o.discount,0)-b.reduce((s,o)=>s+o.qty*o.sell-o.discount,0));
+  else if(ordSortVal==='qty_desc') groups.sort((a,b)=>b.reduce((s,o)=>s+o.qty,0)-a.reduce((s,o)=>s+o.qty,0));
+  else if(ordSortVal==='qty_asc') groups.sort((a,b)=>a.reduce((s,o)=>s+o.qty,0)-b.reduce((s,o)=>s+o.qty,0));
+  else if(ordSortVal==='date_desc') groups.sort((a,b)=>(b[0].date||'').localeCompare(a[0].date||''));
+  else if(ordSortVal==='date_asc') groups.sort((a,b)=>(a[0].date||'').localeCompare(b[0].date||''));
   else if(ordSortVal==='cust_az') groups.sort((a,b)=>a[0].customer.localeCompare(b[0].customer));
+  else if(ordSortVal==='status') groups.sort((a,b)=>(a[0].status||'').localeCompare(b[0].status||''));
+  else if(ordSortVal==='payment') groups.sort((a,b)=>(a[0].payment||'').localeCompare(b[0].payment||''));
+  else if(ordSortVal==='due_desc') groups.sort((a,b)=>b.reduce((s,o)=>s+(o.dueRemaining||0),0)-a.reduce((s,o)=>s+(o.dueRemaining||0),0));
   else groups.sort((a,b)=>b[0].id-a[0].id);
 
   // Filter groups — group matches if ANY item matches
@@ -1372,6 +1584,7 @@ function renderOrders(){
          <div id="grp-${gid}" style="display:none;margin-top:6px;border-left:2px solid var(--border);padding-left:8px">
            ${grp.map(o=>`<div style="font-size:11px;color:var(--muted);padding:2px 0">${o.productName} <span style="color:var(--text)">${o.productSize||''} · ${o.productColor||''}</span> × ${o.qty} = <strong>${fmt(o.qty*o.sell-o.discount)}</strong></div>`).join('')}
            <div style="font-size:10px;color:var(--muted);margin-top:5px;border-top:1px solid var(--border);padding-top:4px;display:flex;flex-wrap:wrap;gap:8px">
+             ${rep.deliveryState?`<span style="color:var(--accent)">📍 ${rep.deliveryState}</span>`:''}
              ${rep.receivedDate?`<span>📥 Received: ${fmtDate(rep.receivedDate)}</span>`:''}
              ${rep.packedDate?`<span>📦 Packed: ${fmtDate(rep.packedDate)}</span>`:''}
              ${rep.shippedDate?`<span>🚚 Shipped: ${fmtDate(rep.shippedDate)}</span>`:''}
@@ -1379,7 +1592,7 @@ function renderOrders(){
              ${rep.cancelledDate?`<span style="color:var(--red)">❌ Cancelled: ${fmtDate(rep.cancelledDate)}</span>`:''}
            </div>
          </div>`
-      : `<div style="font-size:12px">${rep.productName}</div><div style="font-size:10px;color:var(--muted)">${rep.productSize||''}·${rep.productColor||''}</div>`;
+      : `<div style="font-size:12px">${rep.productName}</div><div style="font-size:10px;color:var(--muted)">${rep.productSize||''}·${rep.productColor||''}</div>${rep.deliveryState?`<div style="font-size:10px;color:var(--accent)">📍 ${rep.deliveryState}</div>`:''}${rep.delivery&&rep.delivery!=='Walk-in (In-Store)'?`<div style="font-size:9px;color:var(--muted);margin-top:2px">${[rep.receivedDate?`📥 ${fmtDate(rep.receivedDate)}`:null,rep.packedDate?`📦 ${fmtDate(rep.packedDate)}`:null,rep.shippedDate?`🚚 ${fmtDate(rep.shippedDate)}`:null,rep.deliveredDate?`✅ ${fmtDate(rep.deliveredDate)}`:null].filter(Boolean).join(' · ')}</div>`:''}`;
 
     return `<tr>
       <td style="color:var(--muted);font-size:10px">#${grpIdx+1}</td>
@@ -1402,6 +1615,13 @@ function renderOrders(){
   }).join('');
 
   document.getElementById('ordersTable').innerHTML=`<thead><tr><th>#</th><th>Date</th><th>Customer</th><th>Product</th><th>Qty</th><th>Total</th><th>Due</th><th>Payment</th><th>Order Status</th><th>Actions</th></tr></thead><tbody>${rows}</tbody>`;
+
+  // Append returns/exchanges as separate rows in the same table
+  const returnRows = _buildReturnRows(q, f, d);
+  if(returnRows){
+    const tbody = document.getElementById('ordersTable').querySelector('tbody');
+    if(tbody) tbody.insertAdjacentHTML('beforeend', returnRows);
+  }
 }
 
 function toggleOrderItems(id){
@@ -1421,6 +1641,18 @@ function deleteOrderGroup(gid){
     if(p) p.qty+=o.qty;
   });
   store.orders=store.orders.filter(o=>(o.saleGroup||o.id)!==gid);
+  // Also adjust returns linked to this sale group
+  store.returns.filter(r=>r.saleGroupId===gid).forEach(r=>{
+    // The return added back to inventory, so undo that
+    const p=r.productId?getProduct(r.productId):store.products.find(x=>x.name===r.product);
+    if(p && r.qty) p.qty=Math.max(0,p.qty-r.qty);
+    // Exchange: return the exchange product stock
+    if(r.type==='Exchange' && r.exchangeProductId){
+      const ep=getProduct(r.exchangeProductId);
+      if(ep) ep.qty+=r.qty;
+    }
+  });
+  store.returns=store.returns.filter(r=>r.saleGroupId!==gid);
   saveStore();renderOrders();updateBadges();
 }
 
@@ -1446,7 +1678,7 @@ function showSaleProfit(gid){
     return `<tr><td style="font-size:12px">${o.productName}<div style="font-size:10px;color:var(--muted)">${o.productSize||''} · ${o.productColor||''} × ${o.qty}</div></td><td style="text-align:right">${fmt(rev)}</td><td style="text-align:right;color:var(--muted)">${fmt(cost)}</td><td style="text-align:right"><strong style="color:${p>=0?'var(--green)':'var(--red)'}">${fmt(p)}</strong></td></tr>`;
   }).join('');
   const html=`<div style="padding:4px 0">
-    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Sale #${gid} · ${fmtDate(rep.date)} · ${rep.customer}</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:10px">Sale #${getSaleNum(gid)} · ${fmtDate(rep.date)} · ${rep.customer}</div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead><tr style="border-bottom:2px solid var(--border)"><th style="text-align:left;padding:4px 6px">Item</th><th style="text-align:right;padding:4px 6px">Revenue</th><th style="text-align:right;padding:4px 6px">Cost</th><th style="text-align:right;padding:4px 6px">Profit</th></tr></thead>
       <tbody>${rows}</tbody>
@@ -1472,6 +1704,8 @@ function openEditSale(gid){
   if(!grp.length)return;
   const rep=grp[0];
   document.getElementById('editSaleGroupId').value=gid;
+  const isDelivery=rep.delivery&&rep.delivery!=='Walk-in (In-Store)';
+  const delivOpts=['Walk-in (In-Store)','Home Delivery','In-Store Pickup','Courier (Pathao)','Courier (RedX)','Courier (Paperfly)','Courier (Sundarban)'].map(d=>`<option ${rep.delivery===d?'selected':''}>${d}</option>`).join('');
   const rows=grp.map((o,i)=>`
     <div style="background:var(--surface2);border-radius:10px;padding:12px;margin-bottom:10px">
       <div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px">Item ${i+1}: ${o.productName} · ${o.productSize||''} · ${o.productColor||''}</div>
@@ -1480,22 +1714,52 @@ function openEditSale(gid){
         <div class="form-group"><label class="form-label">Qty</label><input class="form-input eoq" type="number" value="${o.qty}" min="1"/></div>
         <div class="form-group"><label class="form-label">Sell Price (BDT)</label><input class="form-input eos" type="number" value="${o.sell}"/></div>
         <div class="form-group"><label class="form-label">Discount (BDT)</label><input class="form-input eod" type="number" value="${o.discount||0}"/></div>
-        <div class="form-group"><label class="form-label">Payment</label><select class="form-select eop"><option ${o.payment==='Cash'?'selected':''}>Cash</option><option ${o.payment==='bKash'?'selected':''}>bKash</option><option ${o.payment==='Nagad'?'selected':''}>Nagad</option><option ${o.payment==='Bank Transfer'?'selected':''}>Bank Transfer</option><option ${o.payment==='COD'?'selected':''}>COD</option></select></div>
-        <div class="form-group form-full"><label class="form-label">Notes</label><input class="form-input eon" value="${o.notes||''}"/></div>
+        <div class="form-group"><label class="form-label">Payment Method</label>
+          <select class="form-select eop">
+            <option ${o.payment==='Cash'?'selected':''}>Cash</option>
+            <option ${o.payment==='bKash'?'selected':''}>bKash</option>
+            <option ${o.payment==='Nagad'?'selected':''}>Nagad</option>
+            <option ${o.payment==='Bank Transfer'?'selected':''}>Bank Transfer</option>
+            <option ${o.payment==='COD'?'selected':''}>COD</option>
+            <option ${o.payment==='Due'?'selected':''}>Due</option>
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Paid Now (BDT)</label><input class="form-input eopn" type="number" value="${o.paidNow||0}"/></div>
+        <div class="form-group"><label class="form-label">Due Remaining (BDT)</label><input class="form-input eodr" type="number" value="${o.dueRemaining||0}"/></div>
+        ${i===0?`<div class="form-group form-full"><label class="form-label" style="color:var(--accent)">✏️ Custom Total — BDT (0 = auto-calculate from qty × price)</label><input class="form-input eocustom" type="number" value="${o.customTotal||0}" placeholder="0 = auto"/></div>`:''}
+        <div class="form-group form-full"><label class="form-label">Notes</label><input class="form-input eon" value="${(o.notes||'').replace(/"/g,'&quot;')}"/></div>
       </div>
     </div>
   `).join('');
   document.getElementById('editSaleContent').innerHTML=`
-    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Sale #${gid} · ${fmtDate(rep.date)} · <strong>${rep.customer}</strong></div>
+    <div style="margin-bottom:12px;font-size:13px;color:var(--muted)">Sale #${getSaleNum(gid)} · ${fmtDate(rep.date)} · <strong>${rep.customer}</strong></div>
     <div class="form-grid" style="margin-bottom:12px">
       <div class="form-group"><label class="form-label">Customer Name</label><input class="form-input" id="editCustName" value="${rep.customer}"/></div>
-      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="editCustPhone" value="${rep.phone}"/></div>
+      <div class="form-group"><label class="form-label">Phone</label><input class="form-input" id="editCustPhone" value="${rep.phone||''}"/></div>
       <div class="form-group"><label class="form-label">Date</label><input class="form-input" type="date" id="editSaleDate" value="${rep.date}"/></div>
       <div class="form-group"><label class="form-label">Status</label><select class="form-select" id="editSaleStatus"><option ${rep.status==='Pending'?'selected':''}>Pending</option><option ${rep.status==='Packed'?'selected':''}>Packed</option><option ${rep.status==='Shipped'?'selected':''}>Shipped</option><option ${rep.status==='Delivered'?'selected':''}>Delivered</option><option ${rep.status==='Cancelled'?'selected':''}>Cancelled</option></select></div>
+      <div class="form-group"><label class="form-label">Delivery Type</label><select class="form-select" id="editSaleDelivery" onchange="toggleEditDeliveryFields()">${delivOpts}</select></div>
+      <div class="form-group"><label class="form-label">Delivery State / Area</label><input class="form-input" id="editDeliveryState" value="${rep.deliveryState||''}"/></div>
     </div>
-    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--dark)">Items:</div>
+    <div id="editDeliveryTrackingFields" style="${isDelivery?'':'display:none'}">
+      <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">🚚 Delivery Dates</div>
+      <div class="form-grid" style="margin-bottom:12px">
+        <div class="form-group"><label class="form-label">Order Placed Date</label><input class="form-input" type="date" id="editOrderPlacedDate" value="${rep.receivedDate||''}"/></div>
+        <div class="form-group"><label class="form-label">Packed Date</label><input class="form-input" type="date" id="editPackedDate" value="${rep.packedDate||''}"/></div>
+        <div class="form-group"><label class="form-label">Shipped Date</label><input class="form-input" type="date" id="editShippedDate" value="${rep.shippedDate||''}"/></div>
+        <div class="form-group"><label class="form-label">Delivered Date</label><input class="form-input" type="date" id="editDeliveryDate" value="${rep.deliveredDate||''}"/></div>
+        <div class="form-group"><label class="form-label">Cancelled Date</label><input class="form-input" type="date" id="editCancelledDate" value="${rep.cancelledDate||''}"/></div>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;margin-bottom:8px;color:var(--dark)">📦 Items:</div>
     ${rows}`;
   openModal('editSaleModal');
+}
+
+function toggleEditDeliveryFields(){
+  const sel=document.getElementById('editSaleDelivery');
+  const df=document.getElementById('editDeliveryTrackingFields');
+  if(sel&&df) df.style.display=sel.value==='Walk-in (In-Store)'?'none':'block';
 }
 
 function saveEditSale(){
@@ -1505,20 +1769,37 @@ function saveEditSale(){
   const newPhone=document.getElementById('editCustPhone').value.trim();
   const newDate=document.getElementById('editSaleDate').value;
   const newStatus=document.getElementById('editSaleStatus').value;
+  const newDelivery=document.getElementById('editSaleDelivery')?.value||grp[0]?.delivery||'';
+  const newDeliveryState=document.getElementById('editDeliveryState')?.value||'';
+  const newOrderPlacedDate=document.getElementById('editOrderPlacedDate')?.value||'';
+  const newPackedDate=document.getElementById('editPackedDate')?.value||'';
+  const newShippedDate=document.getElementById('editShippedDate')?.value||'';
+  const newDeliveryDate=document.getElementById('editDeliveryDate')?.value||'';
+  const newCancelledDate=document.getElementById('editCancelledDate')?.value||'';
   const oids=[...document.querySelectorAll('#editSaleContent .eoi')].map(e=>+e.value);
   const qtys=[...document.querySelectorAll('#editSaleContent .eoq')].map(e=>+e.value);
   const sells=[...document.querySelectorAll('#editSaleContent .eos')].map(e=>+e.value);
   const discs=[...document.querySelectorAll('#editSaleContent .eod')].map(e=>+e.value||0);
   const pays=[...document.querySelectorAll('#editSaleContent .eop')].map(e=>e.value);
+  const paidNows=[...document.querySelectorAll('#editSaleContent .eopn')].map(e=>+e.value||0);
+  const dueRemainings=[...document.querySelectorAll('#editSaleContent .eodr')].map(e=>+e.value||0);
+  const customTotals=[...document.querySelectorAll('#editSaleContent .eocustom')].map(e=>+e.value||0);
   const notes=[...document.querySelectorAll('#editSaleContent .eon')].map(e=>e.value);
   oids.forEach((oid,i)=>{
     const o=store.orders.find(x=>x.id===oid);
     if(!o)return;
     const p=getProduct(o.product);
-    // Restore old qty, apply new
     if(p) p.qty+=(o.qty-qtys[i]);
     o.qty=qtys[i];o.sell=sells[i];o.discount=discs[i];o.payment=pays[i];o.notes=notes[i];
+    o.paidNow=paidNows[i];o.dueRemaining=dueRemainings[i];
+    if(customTotals[i]!==undefined) o.customTotal=customTotals[i]||0;
     o.customer=newCust;o.phone=newPhone;o.date=newDate;o.status=newStatus;
+    o.delivery=newDelivery;o.deliveryState=newDeliveryState;
+    o.receivedDate=newOrderPlacedDate||o.receivedDate;
+    o.packedDate=newPackedDate||o.packedDate;
+    o.shippedDate=newShippedDate||o.shippedDate;
+    o.deliveredDate=newDeliveryDate||o.deliveredDate;
+    o.cancelledDate=newCancelledDate||o.cancelledDate;
     const dk={'Packed':'packedDate','Shipped':'shippedDate','Delivered':'deliveredDate','Cancelled':'cancelledDate'}[newStatus];
     if(dk&&!o[dk]) o[dk]=newDate;
   });
@@ -1609,21 +1890,38 @@ function renderCashDrawer(){
   const d=document.getElementById('cashDate')?.value||today();
   const dayOrders=store.orders.filter(o=>o.date===d);
   const dayExp=store.expenses.filter(e=>e.date===d);
+  const dayRefunds=(store.returns||[]).filter(r=>r.date===d&&r.refundAmount>0&&r.refundStatus==='Refunded');
+  const dayTx=(store.cashTransactions||[]).filter(t=>t.date===d);
+
   const cashIn=dayOrders.filter(o=>o.payment==='Cash').reduce((s,o)=>s+(o.paidNow||o.qty*o.sell-o.discount),0);
   const bkash=dayOrders.filter(o=>o.payment==='bKash').reduce((s,o)=>s+(o.paidNow||o.qty*o.sell-o.discount),0);
   const nagad=dayOrders.filter(o=>o.payment==='Nagad').reduce((s,o)=>s+(o.paidNow||o.qty*o.sell-o.discount),0);
   const bank=dayOrders.filter(o=>o.payment==='Bank Transfer').reduce((s,o)=>s+(o.paidNow||o.qty*o.sell-o.discount),0);
   const totalIn=dayOrders.reduce((s,o)=>s+(o.paidNow||o.qty*o.sell-o.discount),0);
   const totalOut=dayExp.reduce((s,e)=>s+e.amt,0);
-  const net=totalIn-totalOut;
+  const dayRefundAmt=dayRefunds.reduce((s,r)=>s+r.refundAmount,0);
+  const manAdd=dayTx.filter(t=>t.type==='add').reduce((s,t)=>s+t.amount,0);
+  const manDed=dayTx.filter(t=>t.type==='deduct').reduce((s,t)=>s+t.amount,0);
+  const net=totalIn-totalOut-dayRefundAmt+manAdd-manDed;
+  const {moneyInHand}=calcStats();
+
   document.getElementById('cashStats').innerHTML=`
-    <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Cash In</div><div class="stat-value" style="color:var(--green)">${fmt(totalIn)}</div><div class="stat-sub">${dayOrders.length} sales</div></div>
-    <div class="stat-card"><div class="stat-icon">💸</div><div class="stat-label">Expenses Out</div><div class="stat-value" style="color:var(--red)">${fmt(totalOut)}</div><div class="stat-sub">${dayExp.length} expenses</div></div>
-    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-label">Net Cash</div><div class="stat-value" style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</div></div>
-    <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Transactions</div><div class="stat-value">${dayOrders.length+dayExp.length}</div></div>
+    <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Sales Income</div><div class="stat-value" style="color:var(--green)">${fmt(totalIn)}</div><div class="stat-sub">${dayOrders.length} sales on ${d}</div></div>
+    <div class="stat-card"><div class="stat-icon">💸</div><div class="stat-label">Cash Out</div><div class="stat-value" style="color:var(--red)">${fmt(totalOut+dayRefundAmt)}</div><div class="stat-sub">${dayExp.length} exp${dayRefundAmt>0?` + ${fmt(dayRefundAmt)} refunds`:''}</div></div>
+    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-label">Net (Today)</div><div class="stat-value" style="color:${net>=0?'var(--green)':'var(--red)'}">${fmt(net)}</div><div class="stat-sub">${manAdd>0?`+${fmt(manAdd)} added`:''}${manDed>0?` -${fmt(manDed)} deducted`:''}</div></div>
+    <div class="stat-card" style="border:2px solid var(--accent)"><div class="stat-icon">💰</div><div class="stat-label">Total Money in Hand</div><div class="stat-value" style="color:${moneyInHand>=0?'var(--accent)':'var(--red)'}">${fmt(moneyInHand)}</div><div class="stat-sub">All-time calculated</div></div>
   `;
-  const rows=[...dayOrders.map(o=>({time:o.date,type:'Sale',desc:`${o.customer} — ${o.productName}`,amt:o.paidNow||o.qty*o.sell-o.discount,method:o.payment,cl:'green'})),...dayExp.map(e=>({time:e.date,type:'Expense',desc:e.desc,amt:e.amt,method:e.cat,cl:'red'}))];
-  document.getElementById('cashTable').innerHTML=rows.length?`<thead><tr><th>Type</th><th>Description</th><th>Method</th><th>Amount</th></tr></thead><tbody>${rows.map(r=>`<tr><td><span class="badge badge-${r.cl}">${r.type}</span></td><td>${r.desc}</td><td><span class="badge badge-gray">${r.method}</span></td><td><strong style="color:var(--${r.cl})">${r.cl==='green'?'+':'-'}${fmt(r.amt)}</strong></td></tr>`).join('')}</tbody>`:'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:24px">No transactions for this date</td></tr>';
+
+  const rows=[
+    ...dayOrders.map(o=>({type:'Sale',desc:`${o.customer} — ${o.productName}`,amt:+(o.paidNow||o.qty*o.sell-o.discount),method:o.payment,cl:'green',id:null})),
+    ...dayExp.map(e=>({type:'Expense',desc:e.desc,amt:e.amt,method:e.cat,cl:'red',id:null})),
+    ...dayRefunds.map(r=>({type:'Refund Out',desc:`${r.customer} — ${r.product}`,amt:r.refundAmount,method:'Refund',cl:'red',id:null})),
+    ...dayTx.map(t=>({type:t.type==='add'?'Cash Added':'Cash Deducted',desc:t.desc||'Manual entry',amt:t.amount,method:'Manual',cl:t.type==='add'?'green':'red',id:t.id}))
+  ];
+  document.getElementById('cashTable').innerHTML=rows.length
+    ?`<thead><tr><th>Type</th><th>Description</th><th>Method</th><th>Amount</th><th></th></tr></thead><tbody>${rows.map(r=>`<tr><td><span class="badge badge-${r.cl}">${r.type}</span></td><td style="font-size:12px">${r.desc}</td><td><span class="badge badge-gray">${r.method}</span></td><td><strong style="color:var(--${r.cl})">${r.cl==='green'?'+':'-'}${fmt(r.amt)}</strong></td><td>${r.id?`<button class="btn btn-danger btn-sm" onclick="deleteCashEntry(${r.id})">🗑</button>`:''}</td></tr>`).join('')}</tbody>`
+    :'<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">No transactions for this date</td></tr>';
+
   const pmData={Cash:cashIn,bKash:bkash,Nagad:nagad,'Bank Transfer':bank};
   const pmFiltered=Object.fromEntries(Object.entries(pmData).filter(([,v])=>v>0));
   if(Object.keys(pmFiltered).length){
@@ -1631,24 +1929,65 @@ function renderCashDrawer(){
   }
 }
 
-// ===== FINANCE =====
+function openCashEntry(type,editId){
+  document.getElementById('cashEntryType').value=type;
+  document.getElementById('cashEntryEditId').value=editId||'';
+  document.getElementById('cashEntryAmt').value='';
+  document.getElementById('cashEntryDesc').value='';
+  document.getElementById('cashEntryDate').value=document.getElementById('cashDate')?.value||today();
+  document.getElementById('cashEntryTitle').textContent=type==='add'?'💵 Add Cash to Drawer':'💸 Deduct Cash from Drawer';
+  if(editId){
+    const tx=(store.cashTransactions||[]).find(t=>t.id===+editId);
+    if(tx){document.getElementById('cashEntryAmt').value=tx.amount;document.getElementById('cashEntryDesc').value=tx.desc||'';document.getElementById('cashEntryDate').value=tx.date;}
+  }
+  openModal('cashEntryModal');
+}
+
+function saveCashEntry(){
+  const type=document.getElementById('cashEntryType').value;
+  const amount=+document.getElementById('cashEntryAmt').value;
+  const desc=document.getElementById('cashEntryDesc').value.trim();
+  const date=document.getElementById('cashEntryDate').value||today();
+  const editId=+document.getElementById('cashEntryEditId').value||0;
+  if(!amount||amount<=0){alert('Enter a valid amount');return;}
+  if(!store.cashTransactions) store.cashTransactions=[];
+  if(editId){
+    const tx=store.cashTransactions.find(t=>t.id===editId);
+    if(tx) Object.assign(tx,{type,amount,desc,date});
+  } else {
+    store.cashTransactions.push({id:++store.nextId,type,amount,desc,date});
+    logAction('cash',(type==='add'?'Cash Added':'Cash Deducted')+': '+fmt(amount),desc||'');
+  }
+  saveStore();closeModal('cashEntryModal');renderCashDrawer();
+}
+
+function deleteCashEntry(id){
+  if(!confirm('Delete this entry?'))return;
+  store.cashTransactions=(store.cashTransactions||[]).filter(t=>t.id!==id);
+  saveStore();renderCashDrawer();
+}
+
+// ===== CASH IN HAND (legacy compat) =====
+function saveCashInHand(){
+  const val=+document.getElementById('cashInHandInput')?.value||0;
+  store.cashInHand=val;
+  saveStore();
+}
+
 function renderFinance(){
-  const totalRev=store.orders.reduce((s,o)=>s+o.qty*o.sell-o.discount,0);
-  const totalCost=store.orders.reduce((s,o)=>s+o.qty*o.cost,0);
-  const totalExp=store.expenses.reduce((s,e)=>s+e.amt,0);
-  const totalDrawn=(store.ownerDraws||[]).reduce((s,d)=>s+d.amount,0);
-  const grossProfit=totalRev-totalCost;
-  const netProfit=grossProfit-totalExp;
+  const {grossRev,netRev,custRefundsPaid,custRefundsPending,supRefundsReceived,totalCost,totalExp,totalDrawn,grossProfit,netProfit}=calcStats();
   const netAfterDraws=netProfit-totalDrawn;
-  const margin=totalRev?((netProfit/totalRev)*100).toFixed(1):0;
-  const invVal=store.products.reduce((s,p)=>s+p.qty*p.cost,0);
+  const margin=netRev?((netProfit/netRev)*100).toFixed(1):0;
   document.getElementById('finStats').innerHTML=`
-    <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Revenue</div><div class="stat-value">${fmt(totalRev)}</div></div>
+    <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Gross Revenue</div><div class="stat-value">${fmt(grossRev)}</div></div>
+    <div class="stat-card"><div class="stat-icon">↩️</div><div class="stat-label">Refunds Paid Out</div><div class="stat-value" style="color:var(--red)">${fmt(custRefundsPaid)}</div><div class="stat-sub">${custRefundsPending>0?`${fmt(custRefundsPending)} pending`:''}</div></div>
+    <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-label">Net Revenue</div><div class="stat-value" style="color:var(--accent)">${fmt(netRev)}</div><div class="stat-sub">After refunds</div></div>
     <div class="stat-card"><div class="stat-icon">📦</div><div class="stat-label">Cost of Goods</div><div class="stat-value" style="color:var(--red)">${fmt(totalCost)}</div></div>
     <div class="stat-card"><div class="stat-icon">🧮</div><div class="stat-label">Gross Profit</div><div class="stat-value" style="color:var(--green)">${fmt(grossProfit)}</div></div>
-    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Net Profit</div><div class="stat-value" style="color:${netProfit>=0?'var(--green)':'var(--red)'}">${fmt(netProfit)}</div><div class="stat-sub">${margin}% margin · after expenses</div></div>
-    <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label">Owner's Draw</div><div class="stat-value" style="color:var(--red)">${fmt(totalDrawn)}</div><div class="stat-sub">Total withdrawn</div></div>
-    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-label">Net After Draws</div><div class="stat-value" style="color:${netAfterDraws>=0?'var(--green)':'var(--red)'}">${fmt(netAfterDraws)}</div><div class="stat-sub">Profit minus owner draws</div></div>
+    <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Net Profit</div><div class="stat-value" style="color:${netProfit>=0?'var(--green)':'var(--red)'}">${fmt(netProfit)}</div><div class="stat-sub">${margin}% margin</div></div>
+    <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label">Owner's Draw</div><div class="stat-value" style="color:var(--red)">${fmt(totalDrawn)}</div></div>
+    <div class="stat-card"><div class="stat-icon">🏦</div><div class="stat-label">Net After Draws</div><div class="stat-value" style="color:${netAfterDraws>=0?'var(--green)':'var(--red)'}">${fmt(netAfterDraws)}</div></div>
+    ${supRefundsReceived>0?`<div class="stat-card"><div class="stat-icon">🏪</div><div class="stat-label">Supplier Refunds Rcvd</div><div class="stat-value" style="color:var(--green)">+${fmt(supRefundsReceived)}</div></div>`:''}
   `;
   const months={};
   store.orders.forEach(o=>{const m=o.date.slice(0,7);if(!months[m])months[m]={rev:0,cost:0};months[m].rev+=o.qty*o.sell-o.discount;months[m].cost+=o.qty*o.cost;});
@@ -1780,7 +2119,16 @@ function renderReturns(){
   document.getElementById('returnList').innerHTML=store.returns.length?store.returns.map(r=>{
     const exchProd=r.exchangeProductId?store.products.find(p=>p.id===r.exchangeProductId):null;
     const exchName=exchProd?(exchProd.name+(exchProd.size?' ('+exchProd.size+', '+exchProd.color+')':'')):r.exchangeItem||'';
-    const exchDetail=r.type==='Exchange'&&exchName?`<div style="font-size:11px;background:var(--surface2);border-radius:7px;padding:6px 9px;margin-top:5px"><strong>🔄 Exchange:</strong> ${exchName} · <strong>${fmt(r.exchangePrice||0)}</strong>${r.priceDiff?` · Diff: <strong style="color:${r.priceDiff>0?'var(--green)':'var(--red)'}">${r.priceDiff>0?'+':''}${fmt(r.priceDiff)}</strong>`:''}</div>`:'';
+    const _dAmt=Math.abs(r.priceDiff||0);
+    let _dTag='';
+    if(r.type==='Exchange'&&_dAmt>0){
+      const _paid=(r.priceDiff>0&&r.diffStatus==='Paid')||(r.priceDiff<0&&r.diffStatus==='Refunded');
+      const _bg=r.priceDiff>0?(_paid?'#e8f5e9':'#ffeaea'):(_paid?'#e8f5e9':'#fff8e1');
+      const _cl=r.priceDiff>0?(_paid?'var(--green)':'var(--red)'):(_paid?'var(--green)':'var(--yellow)');
+      const _lbl=r.priceDiff>0?`▲ +৳${fmt(_dAmt)} customer pays`:`▼ ৳${fmt(_dAmt)} refund to customer`;
+      _dTag=`<span style="font-size:10px;background:${_bg};color:${_cl};padding:2px 7px;border-radius:5px;margin-left:5px;font-weight:700">${_lbl} · ${r.diffStatus||'pending'}</span>`;
+    }
+    const exchDetail=r.type==='Exchange'&&exchName?`<div style="font-size:11px;background:var(--surface2);border-radius:7px;padding:6px 9px;margin-top:5px"><strong>🔄 Exchange:</strong> ${exchName} · <strong>${fmt(r.exchangePrice||0)}</strong>${_dTag}</div>`:'';
     const refundDetail=r.type!=='Exchange'&&r.refundAmount?`<div style="font-size:11px;background:var(--surface2);border-radius:7px;padding:6px 9px;margin-top:5px">💰 <strong>Refund:</strong> ${fmt(r.refundAmount)} · <span class="badge ${r.refundStatus==='Refunded'?'badge-green':'badge-yellow'}">${r.refundStatus||'Refund Pending'}</span></div>`:'';
     const missingRefundDetail=r.type!=='Exchange'&&!r.refundAmount?`<div style="font-size:11px;color:var(--muted);margin-top:4px">💰 Refund status: <span class="badge ${r.refundStatus==='Refunded'?'badge-green':'badge-yellow'}">${r.refundStatus||'Refund Pending'}</span></div>`:'';
 
@@ -1796,6 +2144,161 @@ function toggleExchangeFields(){
   const rf=document.getElementById('refundFields');
   if(ef) ef.style.display=type==='Exchange'?'block':'none';
   if(rf) rf.style.display=type==='Exchange'?'none':'block';
+  if(type!=='Exchange'){
+    const ds=document.getElementById('rDiffSection');
+    if(ds) ds.style.display='none';
+  } else {
+    calcExchangeDiff();
+  }
+}
+function calcExchangeDiff(){
+  const retPid=+document.getElementById('rProduct')?.value;
+  const retP=getProduct(retPid);
+  const exchPrice=+document.getElementById('rExchangePrice')?.value||0;
+  const retPrice=retP?(retP.sell||0):0;
+  const diffSec=document.getElementById('rDiffSection');
+  if(!diffSec) return;
+  if(!exchPrice||!retPrice){diffSec.style.display='none';return;}
+  const diff=exchPrice-retPrice;
+  if(diff===0){diffSec.style.display='none';return;}
+  diffSec.style.display='block';
+  document.getElementById('rPriceDiff').value=Math.abs(diff);
+  _updateExchangeDiffBanner(diff);
+}
+function _updateExchangeDiffBanner(diff){
+  const banner=document.getElementById('rDiffBanner');
+  const statusSel=document.getElementById('rDiffStatus');
+  const lbl=document.getElementById('rDiffStatusLabel');
+  if(!banner||!statusSel) return;
+  if(diff>0){
+    banner.innerHTML='⬆️ Exchange item costs <strong>৳'+fmt(Math.abs(diff))+'</strong> more — customer must pay extra.';
+    banner.style.cssText='border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    statusSel.innerHTML='<option value="Paid">✅ Customer Paid</option><option value="Due">⏳ Customer Owes (Due)</option>';
+    if(lbl) lbl.textContent='Customer Payment Status';
+  } else {
+    banner.innerHTML='⬇️ Exchange item is cheaper by <strong>৳'+fmt(Math.abs(diff))+'</strong> — refund to customer.';
+    banner.style.cssText='border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    statusSel.innerHTML='<option value="Refunded">✅ Refunded to Customer</option><option value="Refund Pending">⏳ Refund Pending</option>';
+    if(lbl) lbl.textContent='Refund Status';
+  }
+}
+function onExchangeDiffChange(){
+  const diffAmt=+document.getElementById('rPriceDiff')?.value||0;
+  const status=document.getElementById('rDiffStatus')?.value||'';
+  const isPayDir=(status==='Paid'||status==='Due');
+  _updateExchangeDiffBanner(isPayDir?diffAmt:-diffAmt);
+}
+
+// ===== DELIVERY FIELDS TOGGLE =====
+function toggleDeliveryFields(){
+  const del=document.getElementById('saleDelivery')?.value||'';
+  const isWalkIn=del==='Walk-in (In-Store)';
+  const df=document.getElementById('deliveryTrackingFields');
+  if(df) df.style.display=isWalkIn?'none':'block';
+  if(!isWalkIn && document.getElementById('saleOrderPlacedDate')){
+    if(!document.getElementById('saleOrderPlacedDate').value)
+      document.getElementById('saleOrderPlacedDate').value=today();
+  }
+}
+
+// ===== CUSTOM TOTAL TOGGLE =====
+function toggleCustomTotal(){
+  // Input is always visible now — just refresh price
+  updateSalePrice();
+}
+
+// ===== RETURN CUSTOMER SUGGEST + SALE SELECT =====
+function onReturnCustomerInput(){
+  const name=document.getElementById('rCustomer').value.trim();
+  const sel=document.getElementById('rSaleSelect');
+  if(!sel) return;
+  // Populate sale dropdown for this customer
+  const custOrders=store.orders.filter(o=>o.customer.toLowerCase()===name.toLowerCase());
+  const grpMap={};
+  custOrders.forEach(o=>{const gid=o.saleGroup||o.id;if(!grpMap[gid])grpMap[gid]=[];grpMap[gid].push(o);});
+  const groups=Object.values(grpMap).sort((a,b)=>b[0].id-a[0].id);
+  sel.innerHTML='<option value="">— Select from customer\'s orders —</option>'+
+    groups.map(grp=>{
+      const gid=grp[0].saleGroup||grp[0].id;
+      const total=grp.reduce((s,o)=>s+o.qty*o.sell-o.discount,0);
+      const items=grp.map(o=>o.productName+(o.qty>1?' x'+o.qty:'')).join(', ');
+      return `<option value="${gid}">${fmtDate(grp[0].date)} · ${items} · ${fmt(total)}</option>`;
+    }).join('');
+}
+function onReturnSaleSelect(){
+  const gid=+document.getElementById('rSaleSelect').value||0;
+  if(!gid) return;
+  const grpOrders=store.orders.filter(o=>(o.saleGroup||o.id)===gid);
+  if(!grpOrders.length) return;
+  // Pre-select the product dropdown with first item in the sale
+  const rep=grpOrders[0];
+  const prodSel=document.getElementById('rProduct');
+  if(prodSel && rep.product){
+    prodSel.value=rep.product;
+    updateReturnPrice();
+  }
+}
+
+// ===== SALE PAGE RETURNS RENDER =====
+function renderSalePageReturns(){
+  const el=document.getElementById('salePageReturnList');
+  if(!el) return;
+  const recent=[...store.returns].sort((a,b)=>b.id-a.id).slice(0,8);
+  el.innerHTML=recent.length?recent.map(r=>{
+    const exchProd=r.exchangeProductId?store.products.find(p=>p.id===r.exchangeProductId):null;
+    const exchName=exchProd?exchProd.name:r.exchangeItem||'';
+    return `<div style="padding:9px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <strong style="font-size:13px">${r.customer}</strong>
+        <span class="badge ${r.type==='Exchange'?'badge-blue':'badge-red'}" style="font-size:10px">${r.type}</span>
+      </div>
+      <div style="font-size:11px;color:var(--muted)">${r.product} · Qty: ${r.qty} · ${fmtDate(r.date)}</div>
+      ${r.type==='Exchange'&&exchName?`<div style="font-size:11px;color:var(--accent)">🔄 Exchange: ${exchName}</div>`:''}
+      ${r.type!=='Exchange'&&r.refundAmount?`<div style="font-size:11px;color:var(--red)">💰 Refund: ${fmt(r.refundAmount)} <span class="badge ${r.refundStatus==='Refunded'?'badge-green':'badge-yellow'}">${r.refundStatus||'Pending'}</span></div>`:''}
+      <div style="margin-top:4px;display:flex;gap:5px">
+        <span class="badge ${r.status==='Resolved'?'badge-green':'badge-yellow'}" style="font-size:9px">${r.status}</span>
+        <button class="btn btn-danger btn-sm" style="padding:2px 7px;font-size:10px" onclick="deleteReturn(${r.id})">🗑</button>
+      </div>
+    </div>`;
+  }).join(''):'<p style="text-align:center;color:var(--muted);padding:20px;font-size:12px">No returns yet</p>';
+}
+
+// ===== BUILD RETURN ROWS FOR ALL ORDERS =====
+function _buildReturnRows(q, filterStatus, filterDate){
+  const returns=store.returns.filter(r=>{
+    if(q&&!r.customer.toLowerCase().includes(q)&&!r.product.toLowerCase().includes(q)) return false;
+    if(filterDate && r.date!==filterDate) return false;
+    return true;
+  });
+  if(!returns.length) return '';
+  return returns.map(r=>{
+    const exchProd=r.exchangeProductId?store.products.find(p=>p.id===r.exchangeProductId):null;
+    const exchName=exchProd?exchProd.name:r.exchangeItem||'';
+    const isExchange=r.type==='Exchange';
+    const typeLabel=isExchange?'🔄 Exchange':'↩️ Return';
+    const typeClass=isExchange?'badge-blue':'badge-red';
+    const productCell=isExchange
+      ? `<div style="font-size:12px">${r.product} → ${exchName||'?'}</div><div style="font-size:10px;color:var(--muted)">Exchange · Qty: ${r.qty}</div>`
+      : `<div style="font-size:12px">${r.product}</div><div style="font-size:10px;color:var(--muted)">Return · Qty: ${r.qty}</div>`;
+    const refundInfo=!isExchange&&r.refundAmount?`<strong style="color:var(--red)">${fmt(r.refundAmount)}</strong>`:
+      (isExchange&&r.priceDiff?`<span style="font-size:11px;color:${r.priceDiff>0?'var(--green)':'var(--red)'}">${r.priceDiff>0?'+':''} ${fmt(r.priceDiff)}</span>`:'<span style="color:var(--muted)">—</span>');
+    const statusBadge=r.refundStatus?`<span class="badge ${r.refundStatus==='Refunded'?'badge-green':'badge-yellow'}" style="font-size:9px">${r.refundStatus}</span>`:`<span class="badge ${r.status==='Resolved'?'badge-green':'badge-yellow'}" style="font-size:9px">${r.status}</span>`;
+    return `<tr style="background:${isExchange?'rgba(106,158,232,0.07)':'rgba(224,80,80,0.07)'}">
+      <td style="color:var(--muted);font-size:10px"><span class="badge ${typeClass}" style="font-size:9px">${typeLabel}</span></td>
+      <td style="font-size:11px">${fmtDate(r.date)}</td>
+      <td><strong>${r.customer}</strong></td>
+      <td>${productCell}</td>
+      <td style="text-align:center;color:var(--muted)">${r.qty}</td>
+      <td>${refundInfo}</td>
+      <td>—</td>
+      <td><span style="font-size:11px;color:var(--muted)">${r.reason||'—'}</span></td>
+      <td>${statusBadge}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btn-ghost btn-sm" onclick="editReturn(${r.id})" title="Edit">✏️</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteReturn(${r.id})" style="margin-left:3px" title="Delete">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 function updateReturnPrice(){
   // auto-fill refund amount from returned product sell price
@@ -1811,13 +2314,8 @@ function updateExchangePrice(){
   if(p){
     if(document.getElementById('rExchangeItem')) document.getElementById('rExchangeItem').value=p.name+' ('+p.size+', '+p.color+')';
     if(document.getElementById('rExchangePrice')) document.getElementById('rExchangePrice').value=p.sell||0;
-    // Auto calc price diff
-    const retPid=+document.getElementById('rProduct').value;
-    const retP=getProduct(retPid);
-    if(retP && document.getElementById('rPriceDiff')){
-      document.getElementById('rPriceDiff').value=(p.sell||0)-(retP.sell||0);
-    }
   }
+  calcExchangeDiff();
 }
 function openAddReturn(){
   const prodOpts=store.products.map(p=>`<option value="${p.id}">${p.name} (${p.size}, ${p.color}) — ৳${p.sell}</option>`).join('');
@@ -1834,6 +2332,12 @@ function openAddReturn(){
   if(document.getElementById('rExchangeItem')) document.getElementById('rExchangeItem').value='';
   if(document.getElementById('rExchangePrice')) document.getElementById('rExchangePrice').value='';
   if(document.getElementById('rPriceDiff')) document.getElementById('rPriceDiff').value='';
+  if(document.getElementById('rDiffStatus')) document.getElementById('rDiffStatus').value='Paid';
+  if(document.getElementById('rDiffSection')) document.getElementById('rDiffSection').style.display='none';
+  if(document.getElementById('rSaleSelect')) document.getElementById('rSaleSelect').innerHTML='<option value="">— Select from customer\'s orders —</option>';
+  // Populate customer suggestions
+  const custDs=document.getElementById('rCustSuggest');
+  if(custDs) custDs.innerHTML=[...new Set(store.orders.map(o=>o.customer))].map(n=>`<option value="${n}">`).join('');
   toggleExchangeFields();
   document.getElementById('returnModalTitle').textContent='↩️ Add Return / Exchange';
   document.getElementById('saveReturnBtn').textContent='Save';
@@ -1852,6 +2356,15 @@ function editReturn(id){
   document.getElementById('rDate').value=r.date||today();
   if(document.getElementById('rRefundAmount')) document.getElementById('rRefundAmount').value=r.refundAmount||'';
   if(document.getElementById('rRefundStatus')) document.getElementById('rRefundStatus').value=r.refundStatus||'Refund Pending';
+  // Populate customer suggestions
+  const custDs=document.getElementById('rCustSuggest');
+  if(custDs) custDs.innerHTML=[...new Set(store.orders.map(o=>o.customer))].map(n=>`<option value="${n}">`).join('');
+  // Populate sale select for this customer
+  if(r.customer) onReturnCustomerInput();
+  // Set sale select value if linked
+  if(r.saleGroupId && document.getElementById('rSaleSelect')){
+    setTimeout(()=>{document.getElementById('rSaleSelect').value=r.saleGroupId;},50);
+  }
   // Match returned product by id or name
   const matchProd=store.products.find(p=>p.id===r.productId)||store.products.find(p=>p.name===r.product);
   if(matchProd) document.getElementById('rProduct').value=matchProd.id;
@@ -1862,13 +2375,44 @@ function editReturn(id){
   }
   if(document.getElementById('rExchangeItem')) document.getElementById('rExchangeItem').value=r.exchangeItem||'';
   if(document.getElementById('rExchangePrice')) document.getElementById('rExchangePrice').value=r.exchangePrice||'';
-  if(document.getElementById('rPriceDiff')) document.getElementById('rPriceDiff').value=r.priceDiff||'';
+  if(document.getElementById('rPriceDiff')) document.getElementById('rPriceDiff').value=Math.abs(r.priceDiff||0);
+  // Restore diff status dropdown options based on direction, then set saved value
+  if(r.type==='Exchange'&&(r.priceDiff||0)!==0){
+    const dSel=document.getElementById('rDiffStatus');
+    const dLbl=document.getElementById('rDiffStatusLabel');
+    if((r.priceDiff||0)>0){
+      if(dSel){dSel.innerHTML='<option value="Paid">✅ Customer Paid</option><option value="Due">⏳ Customer Owes (Due)</option>';dSel.value=r.diffStatus||'Due';}
+      if(dLbl) dLbl.textContent='Customer Payment Status';
+    } else {
+      if(dSel){dSel.innerHTML='<option value="Refunded">✅ Refunded to Customer</option><option value="Refund Pending">⏳ Refund Pending</option>';dSel.value=r.diffStatus||'Refund Pending';}
+      if(dLbl) dLbl.textContent='Refund Status';
+    }
+    if(document.getElementById('rDiffSection')) document.getElementById('rDiffSection').style.display='block';
+    _updateExchangeDiffBanner(r.priceDiff||0);
+  } else {
+    if(document.getElementById('rDiffSection')) document.getElementById('rDiffSection').style.display='none';
+  }
   toggleExchangeFields();
   document.getElementById('returnModalTitle').textContent='✏️ Edit Return / Exchange';
   document.getElementById('saveReturnBtn').textContent='Update';
   openModal('addReturnModal');
 }
-function deleteReturn(id){if(!confirm('Delete this return?'))return;store.returns=store.returns.filter(r=>r.id!==id);saveStore();renderReturns();updateBadges();}
+function deleteReturn(id){
+  if(!confirm('Delete this return? Inventory will be adjusted back.'))return;
+  const r=store.returns.find(x=>x.id===id);
+  if(r){
+    // Undo: returned product goes back to sold (remove from inventory)
+    const p=r.productId?getProduct(r.productId):store.products.find(x=>x.name===r.product);
+    if(p) p.qty=Math.max(0,p.qty-r.qty);
+    // If exchange, undo: exchange product stock restored (was decremented when return was saved as exchange)
+    if(r.type==='Exchange' && r.exchangeProductId){
+      const ep=getProduct(r.exchangeProductId);
+      if(ep) ep.qty+=r.qty; // restore exchange product stock
+    }
+  }
+  store.returns=store.returns.filter(r=>r.id!==id);
+  saveStore();renderReturns();updateBadges();
+}
 function saveReturn(){
   const cust=document.getElementById('rCustomer').value.trim();
   const pid=+document.getElementById('rProduct').value;
@@ -1877,9 +2421,15 @@ function saveReturn(){
   const reason=document.getElementById('rReason').value.trim();
   const rDate=document.getElementById('rDate').value||today();
   const editId=+document.getElementById('rReturnId').value||0;
+  const saleSelectVal=document.getElementById('rSaleSelect')?document.getElementById('rSaleSelect').value:'';
+  const saleGroupId=saleSelectVal?+saleSelectVal:null;
   const exchangeItem=document.getElementById('rExchangeItem')?document.getElementById('rExchangeItem').value.trim():'';
   const exchangePrice=document.getElementById('rExchangePrice')?+document.getElementById('rExchangePrice').value||0:0;
-  const priceDiff=document.getElementById('rPriceDiff')?+document.getElementById('rPriceDiff').value||0:0;
+  const rawDiff=document.getElementById('rPriceDiff')?+document.getElementById('rPriceDiff').value||0:0;
+  const diffStatus=document.getElementById('rDiffStatus')?document.getElementById('rDiffStatus').value:'Paid';
+  // Negative priceDiff = we owe customer (refund direction); positive = customer pays us
+  const isRefundDir=(diffStatus==='Refunded'||diffStatus==='Refund Pending');
+  const priceDiff=isRefundDir?-Math.abs(rawDiff):Math.abs(rawDiff);
   const exchangeProductId=document.getElementById('rExchangeProductId')?+document.getElementById('rExchangeProductId').value||null:null;
   const refundAmount=document.getElementById('rRefundAmount')?+document.getElementById('rRefundAmount').value||0:0;
   const refundStatus=document.getElementById('rRefundStatus')?document.getElementById('rRefundStatus').value:'Refund Pending';
@@ -1888,29 +2438,45 @@ function saveReturn(){
   if(editId){
     const r=store.returns.find(x=>x.id===editId);
     if(r){
-      const oldProd=store.products.find(x=>x.name===r.product);
-      if(oldProd) oldProd.qty-=r.qty;
-      if(p) p.qty+=qty;
-      Object.assign(r,{customer:cust,product:p?p.name:r.product,productId:pid,qty,type,reason,date:rDate,
+      // Undo old inventory changes
+      const oldProd=r.productId?getProduct(r.productId):store.products.find(x=>x.name===r.product);
+      if(oldProd) oldProd.qty=Math.max(0,oldProd.qty-r.qty); // un-add old return
+      if(r.type==='Exchange'&&r.exchangeProductId){
+        const oldEp=getProduct(r.exchangeProductId);
+        if(oldEp) oldEp.qty+=r.qty; // restore exchange product from old exchange
+      }
+      // Apply new inventory changes
+      if(p) p.qty+=qty; // returned product back in stock
+      if(type==='Exchange'&&exchangeProductId){
+        const ep=getProduct(exchangeProductId);
+        if(ep) ep.qty=Math.max(0,ep.qty-qty); // exchange product goes out
+      }
+      Object.assign(r,{customer:cust,product:p?p.name:r.product,productId:pid,qty,type,reason,date:rDate,saleGroupId,
         exchangeItem:type==='Exchange'?exchangeItem:'',
         exchangePrice:type==='Exchange'?exchangePrice:0,
         exchangeProductId:type==='Exchange'?exchangeProductId:null,
         priceDiff:type==='Exchange'?priceDiff:0,
+        diffStatus:type==='Exchange'?diffStatus:null,
         refundAmount:type!=='Exchange'?refundAmount:0,
         refundStatus:type!=='Exchange'?refundStatus:null});
     }
   } else {
-    if(p) p.qty+=qty;
-    store.returns.push({id:++store.nextId,customer:cust,product:p?p.name:'',productId:pid,qty,type,reason,date:rDate,status:'Pending',
+    if(p) p.qty+=qty; // returned product back in stock
+    if(type==='Exchange'&&exchangeProductId){
+      const ep=getProduct(exchangeProductId);
+      if(ep) ep.qty=Math.max(0,ep.qty-qty); // exchange product goes out
+    }
+    store.returns.push({id:++store.nextId,customer:cust,product:p?p.name:'',productId:pid,qty,type,reason,date:rDate,status:'Pending',saleGroupId,
       exchangeItem:type==='Exchange'?exchangeItem:'',
       exchangePrice:type==='Exchange'?exchangePrice:0,
       exchangeProductId:type==='Exchange'?exchangeProductId:null,
       priceDiff:type==='Exchange'?priceDiff:0,
+      diffStatus:type==='Exchange'?diffStatus:null,
       refundAmount:type!=='Exchange'?refundAmount:0,
       refundStatus:type!=='Exchange'?refundStatus:'Refund Pending'});
     logAction('return','Return from: '+cust,(p?p.name:'?')+' x'+qty+' | '+type);
   }
-  saveStore();closeModal('addReturnModal');renderReturns();updateBadges();
+  saveStore();closeModal('addReturnModal');renderReturns();renderSalePageReturns();updateBadges();
 }
 function resolveReturn(id){const r=store.returns.find(x=>x.id===id);if(r){r.status='Resolved';saveStore();renderReturns();updateBadges();}}
 
@@ -2036,12 +2602,14 @@ function renderSuppliers(){
   if(!el)return;
   el.innerHTML=''+
     '<div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:14px">'+
-      '<button class="btn btn-ghost" onclick="openSupplierReturn()">&#8617; Return / Exchange</button>'+
+      '<button class="btn btn-ghost" onclick="openSupplierReturn()">↩ Return / Exchange</button>'+
+      '<button class="btn btn-ghost" style="border-color:var(--accent);color:var(--accent)" onclick="openSupplierOrderModal()">📦 New Order</button>'+
       '<button class="btn btn-primary" onclick="openAddSupplier()">+ Add Supplier</button>'+
     '</div>'+
     '<div class="two-col">'+
       '<div id="supplierList"></div>'+
       '<div>'+
+        '<div class="card" style="margin-bottom:18px"><div class="card-header"><span class="card-title">📦 Supplier Orders</span></div><div id="supplierOrdersSection"></div></div>'+
         '<div class="card" style="margin-bottom:18px"><div class="card-header"><span class="card-title">Stock Received Log</span></div><div class="tbl-wrap"><table id="supplierPurchaseTable"></table></div></div>'+
         '<div class="card"><div class="card-header"><span class="card-title">Returns &amp; Exchanges</span><button class="btn btn-ghost btn-sm" onclick="openSupplierReturn()" style="margin-left:10px">+ New</button></div><div class="tbl-wrap"><table id="supplierReturnsTable"></table></div></div>'+
       '</div>'+
@@ -2054,11 +2622,11 @@ function renderSuppliers(){
       store.suppliers.forEach(function(s){
         html+='<div class="supplier-card">'+
           '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">'+
-            '<div style="font-weight:700;font-size:14px;color:var(--dark)">&#127978; '+s.name+'</div>'+
-            '<button class="btn btn-danger btn-sm" onclick="deleteSupplier('+s.id+')">&#128465;</button>'+
+            '<div style="font-weight:700;font-size:14px;color:var(--dark)">🏪 '+s.name+'</div>'+
+            '<button class="btn btn-danger btn-sm" onclick="deleteSupplier('+s.id+')">🗑</button>'+
           '</div>'+
-          '<div style="font-size:12px;color:var(--muted)">'+s.contact+' &nbsp;&middot;&nbsp; '+s.phone+'</div>'+
-          '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+s.location+' &nbsp;&middot;&nbsp; <span class="badge badge-orange">'+s.cat+'</span></div>'+
+          '<div style="font-size:12px;color:var(--muted)">'+s.contact+' &nbsp;·&nbsp; '+s.phone+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:3px">'+s.location+' &nbsp;·&nbsp; <span class="badge badge-orange">'+s.cat+'</span></div>'+
           (s.notes?'<div style="font-size:11px;color:var(--muted);margin-top:5px;padding:6px 10px;background:var(--surface2);border-radius:7px">'+s.notes+'</div>':'')+
         '</div>';
       });
@@ -2066,39 +2634,103 @@ function renderSuppliers(){
     } else {
       sl.innerHTML='<div class="card"><div class="card-body" style="text-align:center;color:var(--muted);padding:40px">No suppliers added yet.</div></div>';
     }
+
+    // Supplier Orders
+    var orders=[].concat(store.supplierOrders||[]).sort(function(a,b){return new Date(b.orderDate)-new Date(a.orderDate);});
+    var ordSec=document.getElementById('supplierOrdersSection');
+    if(ordSec){
+      if(orders.length){
+        var statusColors={Ordered:'badge-yellow',Accepted:'badge-blue',Sent:'badge-orange',Received:'badge-green',Cancelled:'badge-red'};
+        var payColors={cod:'badge-gray',advance:'badge-green',partial:'badge-orange'};
+        var oh='<div class="tbl-wrap"><table><thead><tr><th>#</th><th>Product</th><th>Qty</th><th>Value</th><th>Payment</th><th>Status</th><th>Dates</th><th></th></tr></thead><tbody>';
+        orders.forEach(function(o,i){
+          var payLabel={cod:'COD',advance:'Full Adv.',partial:'Partial'}[o.paymentType]||o.paymentType;
+          var payDetail='';
+          if(o.paymentType==='advance'||o.paymentType==='partial') payDetail+='<div style="font-size:9px;color:var(--muted)">Adv: '+fmt(o.advancePaid||0)+'</div>';
+          if(o.paymentType==='cod'||o.paymentType==='partial') payDetail+='<div style="font-size:9px;color:var(--muted)">COD: '+fmt(o.codAmount||0)+'</div>';
+          var dates='';
+          if(o.orderDate) dates+='<div style="font-size:9px">📋 Ordered: '+fmtDate(o.orderDate)+'</div>';
+          if(o.acceptedDate) dates+='<div style="font-size:9px">✅ Accepted: '+fmtDate(o.acceptedDate)+'</div>';
+          if(o.sentDate) dates+='<div style="font-size:9px">🚚 Sent: '+fmtDate(o.sentDate)+'</div>';
+          if(o.receivedDate) dates+='<div style="font-size:9px">📥 Received: '+fmtDate(o.receivedDate)+'</div>';
+          if(o.cancelledDate) dates+='<div style="font-size:9px;color:var(--red)">❌ Cancelled: '+fmtDate(o.cancelledDate)+'</div>';
+          oh+='<tr>'+
+            '<td style="color:var(--muted);font-size:10px">#'+(i+1)+'</td>'+
+            '<td><div style="font-size:12px;font-weight:600">'+o.productName+'</div><div style="font-size:10px;color:var(--muted)">'+(o.supplierName||'')+(o.notes?'<br>'+o.notes:'')+'</div></td>'+
+            '<td><span class="badge badge-blue">×'+o.qty+'</span></td>'+
+            '<td><strong style="color:var(--accent)">'+fmt(o.totalValue||0)+'</strong>'+payDetail+'</td>'+
+            '<td><span class="badge '+payColors[o.paymentType]+'">'+payLabel+'</span></td>'+
+            '<td><span class="badge '+statusColors[o.status]+'">'+o.status+'</span></td>'+
+            '<td style="min-width:120px">'+dates+'</td>'+
+            '<td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openSupplierOrderModal('+o.id+')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteSupplierOrder('+o.id+')" style="margin-left:3px">🗑</button></td>'+
+          '</tr>';
+        });
+        ordSec.innerHTML=oh+'</tbody></table></div>';
+        // Stats for supplier orders
+        var totalOrdered=orders.reduce(function(s,o){return s+(o.totalValue||0);},0);
+        var totalAdvance=orders.reduce(function(s,o){return s+(o.advancePaid||0);},0);
+        var totalCOD=orders.filter(function(o){return o.status==='Received';}).reduce(function(s,o){return s+(o.codAmount||0);},0);
+        ordSec.innerHTML='<div style="display:flex;gap:10px;padding:12px 14px;flex-wrap:wrap;border-bottom:1px solid var(--border)">'+
+          '<div style="font-size:12px">📦 <strong>'+orders.length+'</strong> orders · Total: <strong style="color:var(--accent)">'+fmt(totalOrdered)+'</strong></div>'+
+          '<div style="font-size:12px">💳 Advance paid: <strong style="color:var(--red)">'+fmt(totalAdvance)+'</strong></div>'+
+          '<div style="font-size:12px">🚚 COD paid: <strong style="color:var(--red)">'+fmt(totalCOD)+'</strong></div>'+
+        '</div>'+ordSec.innerHTML;
+      } else {
+        ordSec.innerHTML='<div style="text-align:center;color:var(--muted);padding:20px;font-size:13px">No supplier orders yet. Click "📦 New Order" to add.</div>';
+      }
+    }
+
     var rl=[].concat(store.restockLog).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
     var pt=document.getElementById('supplierPurchaseTable');
     if(pt){
       if(rl.length){
         var rh='<thead><tr><th>Date</th><th>Product</th><th>Qty</th><th>Cost/Unit</th><th>Supplier</th></tr></thead><tbody>';
-        rl.forEach(function(r){ rh+='<tr><td style="font-size:11px">'+fmtDate(r.date)+'</td><td style="font-size:12px">'+r.productName+'</td><td><span class="badge badge-green">+'+r.qty+'</span></td><td>'+(r.cost?fmt(r.cost):'&mdash;')+'</td><td style="color:var(--muted);font-size:11px">'+(r.note||'&mdash;')+'</td></tr>'; });
+        rl.forEach(function(r){ rh+='<tr><td style="font-size:11px">'+fmtDate(r.date)+'</td><td style="font-size:12px">'+r.productName+'</td><td><span class="badge badge-green">+'+r.qty+'</span></td><td>'+(r.cost?fmt(r.cost):'—')+'</td><td style="color:var(--muted);font-size:11px">'+(r.note||'—')+'</td></tr>'; });
         pt.innerHTML=rh+'</tbody>';
       } else {
         pt.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No restock history</td></tr>';
       }
     }
+
     var sr=[].concat(store.supplierReturns||[]).sort(function(a,b){return new Date(b.date)-new Date(a.date);});
     var rt=document.getElementById('supplierReturnsTable');
     if(rt){
       if(sr.length){
-        var sh='<thead><tr><th>Date</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Type</th><th>Status</th><th>Reason</th><th></th></tr></thead><tbody>';
+        var sh='<thead><tr><th>Date Applied</th><th>Resolved</th><th>Supplier</th><th>Product</th><th>Qty</th><th>Type</th><th>Details</th><th>Status</th><th></th></tr></thead><tbody>';
         sr.forEach(function(r){
           var typeClass=r.type==='Exchange'?'badge-blue':'badge-orange';
           var statClass=r.status==='Resolved'?'badge-green':'badge-yellow';
+          var details='';
+          if(r.type==='Return'&&r.refundValue) details='<div style="font-size:10px;color:var(--green)">💰 Refund: '+fmt(r.refundValue)+'</div>';
+          if(r.type==='Exchange'){
+            if(r.exchangeProduct) details='<div style="font-size:10px">🔄 '+r.exchangeProduct+(r.exchangePrice?' — '+fmt(r.exchangePrice):'')+' </div>';
+            if((r.priceDiff||0)!==0){
+              var sdAmt=Math.abs(r.priceDiff||0);
+              var sdPaid=(r.priceDiff>0&&r.diffStatus==='Paid')||(r.priceDiff<0&&r.diffStatus==='Received');
+              var sdBg=r.priceDiff>0?(sdPaid?'#e8f5e9':'#ffeaea'):(sdPaid?'#e8f5e9':'#fff8e1');
+              var sdCl=r.priceDiff>0?(sdPaid?'#2e7d32':'#c62828'):(sdPaid?'#2e7d32':'#f57f17');
+              var sdLbl=r.priceDiff>0?('▲ We pay ৳'+fmt(sdAmt)):('▼ Supplier pays ৳'+fmt(sdAmt));
+              details+='<div style="font-size:10px;background:'+sdBg+';color:'+sdCl+';padding:2px 7px;border-radius:4px;margin-top:3px;font-weight:700">'+sdLbl+' · '+(r.diffStatus||'pending')+'</div>';
+            }
+            if(r.exchangeAppliedDate) details+='<div style="font-size:9px;color:var(--muted)">Applied: '+fmtDate(r.exchangeAppliedDate)+'</div>';
+            if(r.exchangedDate) details+='<div style="font-size:9px;color:var(--muted)">Received: '+fmtDate(r.exchangedDate)+'</div>';
+          }
+          if(r.reason) details+='<div style="font-size:9px;color:var(--muted)">'+r.reason+'</div>';
           sh+='<tr>'+
             '<td style="font-size:11px">'+fmtDate(r.date)+'</td>'+
+            '<td style="font-size:11px">'+(r.resolvedDate?fmtDate(r.resolvedDate):'<span style="color:var(--muted)">—</span>')+'</td>'+
             '<td style="font-size:12px">'+r.supplierName+'</td>'+
             '<td style="font-size:12px">'+r.productName+'</td>'+
             '<td><span class="badge badge-red">-'+r.qty+'</span></td>'+
             '<td><span class="badge '+typeClass+'">'+r.type+'</span></td>'+
+            '<td>'+details+'</td>'+
             '<td><span class="badge '+statClass+'" style="cursor:pointer" onclick="toggleSupplierReturnStatus('+r.id+')">'+r.status+'</span></td>'+
-            '<td style="font-size:11px;color:var(--muted)">'+(r.reason||'&mdash;')+'</td>'+
-            '<td><button class="btn btn-danger btn-sm" onclick="deleteSupplierReturn('+r.id+')">&#128465;</button></td>'+
+            '<td style="white-space:nowrap"><button class="btn btn-ghost btn-sm" onclick="openSupplierReturn('+r.id+')">✏️</button><button class="btn btn-danger btn-sm" onclick="deleteSupplierReturn('+r.id+')" style="margin-left:2px">🗑</button></td>'+
           '</tr>';
         });
         rt.innerHTML=sh+'</tbody>';
       } else {
-        rt.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No returns logged yet</td></tr>';
+        rt.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No returns logged yet</td></tr>';
       }
     }
   },50);
@@ -2112,49 +2744,265 @@ function saveSupplier(){
 }
 function deleteSupplier(id){if(!confirm('Remove supplier?'))return;store.suppliers=store.suppliers.filter(s=>s.id!==id);saveStore();renderSuppliers();}
 
-function openSupplierReturn(){
+function toggleSupplierReturnFields(){
+  const type=document.getElementById('srType')?.value;
+  const isExchange=type==='Exchange';
+  document.getElementById('srRefundValueGroup').style.display=isExchange?'none':'';
+  document.getElementById('srExchangeProductGroup').style.display=isExchange?'':'none';
+  document.getElementById('srExchangePriceGroup').style.display=isExchange?'':'none';
+  document.getElementById('srExchangeDateGroup').style.display=isExchange?'':'none';
+  document.getElementById('srExchangedDateGroup').style.display=isExchange?'':'none';
+  const sdiff=document.getElementById('srDiffSection');
+  if(sdiff) sdiff.style.display='none';
+  if(isExchange) calcSrExchangeDiff();
+}
+function calcSrExchangeDiff(){
+  const retPid=+document.getElementById('srProduct')?.value;
+  const retP=getProduct(retPid);
+  const exchPrice=+document.getElementById('srExchangePrice')?.value||0;
+  const retPrice=retP?(retP.cost||0):0;
+  const diffSec=document.getElementById('srDiffSection');
+  if(!diffSec) return;
+  if(!exchPrice){diffSec.style.display='none';return;}
+  const diff=exchPrice-retPrice;
+  if(diff===0){diffSec.style.display='none';return;}
+  diffSec.style.display='block';
+  document.getElementById('srPriceDiff').value=Math.abs(diff);
+  _updateSrDiffBanner(diff);
+}
+function _updateSrDiffBanner(diff){
+  const banner=document.getElementById('srDiffBanner');
+  const ssel=document.getElementById('srDiffStatus');
+  const slbl=document.getElementById('srDiffStatusLabel');
+  if(!banner||!ssel) return;
+  if(diff>0){
+    banner.innerHTML='⬆️ Exchange item costs <strong>৳'+fmt(Math.abs(diff))+'</strong> more — we must pay supplier extra.';
+    banner.style.cssText='border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;background:#fff3e0;color:#e65100;border:1px solid #ffcc80;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    ssel.innerHTML='<option value="Paid">✅ We Paid Supplier</option><option value="Due">⏳ We Owe Supplier</option>';
+    if(slbl) slbl.textContent='Our Payment Status';
+  } else {
+    banner.innerHTML='⬇️ Exchange item is cheaper by <strong>৳'+fmt(Math.abs(diff))+'</strong> — supplier owes us.';
+    banner.style.cssText='border-radius:9px;padding:10px 14px;font-size:13px;font-weight:700;margin-bottom:8px;background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;display:flex;align-items:center;gap:8px;flex-wrap:wrap';
+    ssel.innerHTML='<option value="Received">✅ Supplier Refunded Us</option><option value="Pending">⏳ Awaiting from Supplier</option>';
+    if(slbl) slbl.textContent='Supplier Payment Status';
+  }
+}
+function onSrDiffChange(){
+  const diffAmt=+document.getElementById('srPriceDiff')?.value||0;
+  const status=document.getElementById('srDiffStatus')?.value||'';
+  const isPayDir=(status==='Paid'||status==='Due');
+  _updateSrDiffBanner(isPayDir?diffAmt:-diffAmt);
+}
+
+function openSupplierReturn(editId){
+  document.getElementById('srEditId').value=editId||'';
   document.getElementById('srDate').value=today();
+  document.getElementById('srResolvedDate').value='';
   document.getElementById('srReason').value='';
   document.getElementById('srQty').value=1;
   document.getElementById('srStatus').value='Pending';
   document.getElementById('srType').value='Return';
+  document.getElementById('srRefundValue').value='';
+  document.getElementById('srExchangeProduct').value='';
+  document.getElementById('srExchangePrice').value='';
+  document.getElementById('srExchangeAppliedDate').value='';
+  document.getElementById('srExchangedDate').value='';
+  if(document.getElementById('srPriceDiff')) document.getElementById('srPriceDiff').value='';
+  if(document.getElementById('srDiffStatus')) document.getElementById('srDiffStatus').value='Paid';
+  if(document.getElementById('srDiffSection')) document.getElementById('srDiffSection').style.display='none';
+  if(editId){
+    const r=(store.supplierReturns||[]).find(x=>x.id===+editId);
+    if(r){
+      document.getElementById('srQty').value=r.qty;
+      document.getElementById('srDate').value=r.date||today();
+      document.getElementById('srResolvedDate').value=r.resolvedDate||'';
+      document.getElementById('srType').value=r.type;
+      document.getElementById('srStatus').value=r.status;
+      document.getElementById('srReason').value=r.reason||'';
+      document.getElementById('srRefundValue').value=r.refundValue||'';
+      document.getElementById('srExchangeProduct').value=r.exchangeProduct||'';
+      document.getElementById('srExchangePrice').value=r.exchangePrice||'';
+      document.getElementById('srExchangeAppliedDate').value=r.exchangeAppliedDate||'';
+      document.getElementById('srExchangedDate').value=r.exchangedDate||'';
+      if(document.getElementById('srPriceDiff')) document.getElementById('srPriceDiff').value=Math.abs(r.priceDiff||0);
+      // Restore diff status options based on direction
+      if(r.type==='Exchange'&&(r.priceDiff||0)!==0){
+        const ss=document.getElementById('srDiffStatus');
+        const sl=document.getElementById('srDiffStatusLabel');
+        if((r.priceDiff||0)>0){
+          if(ss){ss.innerHTML='<option value="Paid">✅ We Paid Supplier</option><option value="Due">⏳ We Owe Supplier</option>';ss.value=r.diffStatus||'Due';}
+          if(sl) sl.textContent='Our Payment Status';
+        } else {
+          if(ss){ss.innerHTML='<option value="Received">✅ Supplier Refunded Us</option><option value="Pending">⏳ Awaiting from Supplier</option>';ss.value=r.diffStatus||'Pending';}
+          if(sl) sl.textContent='Supplier Payment Status';
+        }
+        if(document.getElementById('srDiffSection')) document.getElementById('srDiffSection').style.display='block';
+        _updateSrDiffBanner(r.priceDiff||0);
+      }
+    }
+  }
   var so='<option value="">-- Select Supplier --</option>';
   store.suppliers.forEach(function(s){ so+='<option value="'+s.id+'">'+s.name+'</option>'; });
   document.getElementById('srSupplier').innerHTML=so;
+  if(editId){const r=(store.supplierReturns||[]).find(x=>x.id===+editId);if(r)document.getElementById('srSupplier').value=r.supplierId;}
   var po='<option value="">-- Select Product --</option>';
-  store.products.forEach(function(p){ po+='<option value="'+p.id+'">'+p.name+' ('+p.size+', '+p.color+') - Stock: '+p.qty+'</option>'; });
+  store.products.forEach(function(p){ po+='<option value="'+p.id+'">'+p.name+' ('+( p.size||'')+', '+(p.color||'')+') - Stock: '+p.qty+'</option>'; });
   document.getElementById('srProduct').innerHTML=po;
+  if(editId){const r=(store.supplierReturns||[]).find(x=>x.id===+editId);if(r)document.getElementById('srProduct').value=r.productId;}
+  toggleSupplierReturnFields();
   openModal('supplierReturnModal');
 }
 function saveSupplierReturn(){
+  var editId=+document.getElementById('srEditId').value||0;
   var supId=+document.getElementById('srSupplier').value;
   var pid=+document.getElementById('srProduct').value;
   var qty=+document.getElementById('srQty').value;
   var date=document.getElementById('srDate').value;
+  var resolvedDate=document.getElementById('srResolvedDate').value;
   var type=document.getElementById('srType').value;
   var status=document.getElementById('srStatus').value;
   var reason=document.getElementById('srReason').value.trim();
+  var refundValue=type==='Return'?(+document.getElementById('srRefundValue').value||0):0;
+  var exchangeProduct=type==='Exchange'?document.getElementById('srExchangeProduct').value.trim():'';
+  var exchangePrice=type==='Exchange'?(+document.getElementById('srExchangePrice').value||0):0;
+  var exchangeAppliedDate=type==='Exchange'?document.getElementById('srExchangeAppliedDate').value:'';
+  var exchangedDate=type==='Exchange'?document.getElementById('srExchangedDate').value:'';
+  var srRawDiff=type==='Exchange'?(+document.getElementById('srPriceDiff')?.value||0):0;
+  var srDiffStatus=type==='Exchange'?(document.getElementById('srDiffStatus')?.value||'Paid'):'';
+  var srIsRefDir=(srDiffStatus==='Received'||srDiffStatus==='Pending');
+  var srPriceDiff=srIsRefDir?-Math.abs(srRawDiff):Math.abs(srRawDiff);
   if(!supId||!pid||!qty||!date){alert('Please fill Supplier, Product, Quantity and Date');return;}
   var sup=store.suppliers.find(function(s){return s.id===supId;});
   var p=getProduct(pid);
-  var actualQty=qty;
-  if(p){
-    if(p.qty>=qty){ p.qty-=qty; }
-    else{ alert('Only '+p.qty+' in stock, quantity adjusted.'); actualQty=p.qty; p.qty=0; }
-  }
   if(!store.supplierReturns) store.supplierReturns=[];
-  store.supplierReturns.push({id:++store.nextId,supplierId:supId,supplierName:sup?sup.name:'',productId:pid,productName:p?p.name:'',qty:actualQty,date:date,type:type,status:status,reason:reason});
-  saveStore();closeModal('supplierReturnModal');renderSuppliers();
-  alert(type+' logged for '+(p?p.name:'')+'. Stock updated.');
+  if(editId){
+    var r=store.supplierReturns.find(function(x){return x.id===editId;});
+    if(r){
+      // Restore old qty back to product before updating
+      var oldP=getProduct(r.productId);
+      if(oldP) oldP.qty+=r.qty;
+      // Deduct new qty
+      if(p){if(p.qty>=qty){p.qty-=qty;}else{qty=p.qty;p.qty=0;}}
+      Object.assign(r,{supplierId:supId,supplierName:sup?sup.name:'',productId:pid,productName:p?p.name:'',qty,date,resolvedDate,type,status,reason,refundValue,exchangeProduct,exchangePrice,exchangeAppliedDate,exchangedDate,priceDiff:srPriceDiff,diffStatus:srDiffStatus});
+    }
+  } else {
+    var actualQty=qty;
+    if(p){if(p.qty>=qty){p.qty-=qty;}else{alert('Only '+p.qty+' in stock, quantity adjusted.');actualQty=p.qty;p.qty=0;}}
+    store.supplierReturns.push({id:++store.nextId,supplierId:supId,supplierName:sup?sup.name:'',productId:pid,productName:p?p.name:'',qty:actualQty,date,resolvedDate,type,status,reason,refundValue,exchangeProduct,exchangePrice,exchangeAppliedDate,exchangedDate,priceDiff:srPriceDiff,diffStatus:srDiffStatus});
+    logAction('supplier',type+' logged: '+(p?p.name:''),sup?sup.name:'');
+  }
+  saveStore();closeModal('supplierReturnModal');renderSuppliers();renderInventory();
 }
 function toggleSupplierReturnStatus(id){
   var r=(store.supplierReturns||[]).find(function(x){return x.id===id;});
   if(r){r.status=r.status==='Resolved'?'Pending':'Resolved';saveStore();renderSuppliers();}
 }
 function deleteSupplierReturn(id){
-  if(!confirm('Delete this return record?'))return;
+  if(!confirm('Delete this return record? Inventory will be restored.'))return;
+  const r=(store.supplierReturns||[]).find(function(x){return x.id===id;});
+  if(r){
+    // Restore inventory (the return removed stock, deleting it should add back)
+    const p=getProduct(r.productId);
+    if(p) p.qty+=r.qty;
+  }
   store.supplierReturns=(store.supplierReturns||[]).filter(function(x){return x.id!==id;});
-  saveStore();renderSuppliers();
+  saveStore();renderSuppliers();renderInventory();
+}
+
+// ===== SUPPLIER ORDERS =====
+function openSupplierOrderModal(editId){
+  document.getElementById('supOrderEditId').value=editId||'';
+  document.getElementById('supOrderTitle').textContent=editId?'✏️ Edit Supplier Order':'📦 Add Supplier Order';
+  document.getElementById('soProductName').value='';
+  document.getElementById('soQty').value=1;
+  document.getElementById('soUnitPrice').value='';
+  document.getElementById('soTotalValue').value='';
+  document.getElementById('soPaymentType').value='cod';
+  document.getElementById('soAdvancePaid').value='';
+  document.getElementById('soCODAmount').value='';
+  document.getElementById('soStatus').value='Ordered';
+  document.getElementById('soOrderDate').value=today();
+  document.getElementById('soAcceptedDate').value='';
+  document.getElementById('soSentDate').value='';
+  document.getElementById('soReceivedDate').value='';
+  document.getElementById('soCancelledDate').value='';
+  document.getElementById('soNotes').value='';
+  if(editId){
+    const o=(store.supplierOrders||[]).find(x=>x.id===+editId);
+    if(o){
+      document.getElementById('soProductName').value=o.productName||'';
+      document.getElementById('soQty').value=o.qty||1;
+      document.getElementById('soUnitPrice').value=o.unitPrice||'';
+      document.getElementById('soTotalValue').value=o.totalValue||'';
+      document.getElementById('soPaymentType').value=o.paymentType||'cod';
+      document.getElementById('soAdvancePaid').value=o.advancePaid||'';
+      document.getElementById('soCODAmount').value=o.codAmount||'';
+      document.getElementById('soStatus').value=o.status||'Ordered';
+      document.getElementById('soOrderDate').value=o.orderDate||today();
+      document.getElementById('soAcceptedDate').value=o.acceptedDate||'';
+      document.getElementById('soSentDate').value=o.sentDate||'';
+      document.getElementById('soReceivedDate').value=o.receivedDate||'';
+      document.getElementById('soCancelledDate').value=o.cancelledDate||'';
+      document.getElementById('soNotes').value=o.notes||'';
+    }
+  }
+  var so='<option value="">-- Select Supplier --</option>';
+  store.suppliers.forEach(function(s){ so+='<option value="'+s.id+'">'+s.name+'</option>'; });
+  document.getElementById('soSupplier').innerHTML=so;
+  if(editId){const o=(store.supplierOrders||[]).find(x=>x.id===+editId);if(o)document.getElementById('soSupplier').value=o.supplierId||'';}
+  toggleSupplierOrderPayFields();
+  openModal('supplierOrderModal');
+}
+
+function toggleSupplierOrderPayFields(){
+  const type=document.getElementById('soPaymentType')?.value;
+  const advGroup=document.getElementById('soAdvancePaidGroup');
+  const codGroup=document.getElementById('soCODAmountGroup');
+  if(advGroup) advGroup.style.display=(type==='advance'||type==='partial')?'':'none';
+  if(codGroup) codGroup.style.display=(type==='cod'||type==='partial')?'':'none';
+}
+
+function updateSupplierOrderTotal(){
+  const qty=+document.getElementById('soQty').value||0;
+  const unit=+document.getElementById('soUnitPrice').value||0;
+  if(qty&&unit) document.getElementById('soTotalValue').value=qty*unit;
+}
+
+function saveSupplierOrder(){
+  const editId=+document.getElementById('supOrderEditId').value||0;
+  const supplierId=+document.getElementById('soSupplier').value||0;
+  const sup=store.suppliers.find(s=>s.id===supplierId);
+  const productName=document.getElementById('soProductName').value.trim();
+  const qty=+document.getElementById('soQty').value||0;
+  const unitPrice=+document.getElementById('soUnitPrice').value||0;
+  const totalValue=+document.getElementById('soTotalValue').value||qty*unitPrice;
+  const paymentType=document.getElementById('soPaymentType').value;
+  const advancePaid=+document.getElementById('soAdvancePaid').value||0;
+  const codAmount=+document.getElementById('soCODAmount').value||0;
+  const status=document.getElementById('soStatus').value;
+  const orderDate=document.getElementById('soOrderDate').value||today();
+  const acceptedDate=document.getElementById('soAcceptedDate').value;
+  const sentDate=document.getElementById('soSentDate').value;
+  const receivedDate=document.getElementById('soReceivedDate').value;
+  const cancelledDate=document.getElementById('soCancelledDate').value;
+  const notes=document.getElementById('soNotes').value.trim();
+  if(!productName||!qty){alert('Enter product name and quantity');return;}
+  if(!store.supplierOrders) store.supplierOrders=[];
+  const data={supplierId,supplierName:sup?sup.name:'',productName,qty,unitPrice,totalValue,paymentType,advancePaid,codAmount,status,orderDate,acceptedDate,sentDate,receivedDate,cancelledDate,notes};
+  if(editId){
+    const o=store.supplierOrders.find(x=>x.id===editId);
+    if(o) Object.assign(o,data);
+  } else {
+    store.supplierOrders.push({id:++store.nextId,...data});
+    logAction('supplier','Order placed: '+productName,fmt(totalValue)+(sup?' from '+sup.name:''));
+  }
+  saveStore();closeModal('supplierOrderModal');renderSuppliers();renderInventory();
+}
+
+function deleteSupplierOrder(id){
+  if(!confirm('Delete this order?'))return;
+  store.supplierOrders=(store.supplierOrders||[]).filter(o=>o.id!==id);
+  saveStore();renderSuppliers();renderInventory();
 }
 
 // ===== BLACKLIST =====
@@ -2872,7 +3720,8 @@ function renderOwnerDraw(){
   const draws=store.ownerDraws||[];
   const totalDrawn=draws.reduce((s,d)=>s+d.amount,0);
   const cashDrawn=draws.filter(d=>d.type==='cash'||d.type==='salary').reduce((s,d)=>s+d.amount,0);
-  const itemsDrawn=draws.filter(d=>d.type==='item').reduce((s,d)=>s+d.amount,0);
+  const itemsDrawn=draws.filter(d=>d.type==='item'||d.type==='product').reduce((s,d)=>s+d.amount,0);
+  const {moneyInHand}=calcStats();
   el.innerHTML=`
     <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
       <button class="btn btn-primary" onclick="openOwnerDraw()">＋ Record Draw</button>
@@ -2880,8 +3729,8 @@ function renderOwnerDraw(){
     <div class="stats-grid" style="margin-bottom:18px">
       <div class="stat-card"><div class="stat-icon">💼</div><div class="stat-label">Total Drawn</div><div class="stat-value" style="color:var(--red)">${fmt(totalDrawn)}</div></div>
       <div class="stat-card"><div class="stat-icon">💵</div><div class="stat-label">Cash / Salary</div><div class="stat-value">${fmt(cashDrawn)}</div></div>
-      <div class="stat-card"><div class="stat-icon">👗</div><div class="stat-label">Items Taken</div><div class="stat-value">${fmt(itemsDrawn)}</div></div>
-      <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Total Entries</div><div class="stat-value">${draws.length}</div></div>
+      <div class="stat-card"><div class="stat-icon">👗</div><div class="stat-label">Items / Products</div><div class="stat-value">${fmt(itemsDrawn)}</div></div>
+      <div class="stat-card" style="border:2px solid var(--accent)"><div class="stat-icon">💰</div><div class="stat-label">Money in Hand</div><div class="stat-value" style="color:${moneyInHand>=0?'var(--accent)':'var(--red)'}">${fmt(moneyInHand)}</div><div class="stat-sub">After all draws</div></div>
     </div>
     <div class="card">
       <div class="card-header"><span class="card-title">💼 Owner's Draw History</span></div>
@@ -2891,8 +3740,8 @@ function renderOwnerDraw(){
           <tbody>
             ${draws.length?[...draws].sort((a,b)=>b.id-a.id).map(d=>`<tr>
               <td style="font-size:11px;color:var(--muted)">${fmtDate(d.date)}</td>
-              <td><span class="badge badge-orange">${{cash:'💵 Cash',item:'👗 Item',expense:'🧾 Expense',salary:'👤 Salary'}[d.type]||d.type}</span></td>
-              <td style="font-size:12px">${d.desc}</td>
+              <td><span class="badge badge-orange">${{cash:'💵 Cash',item:'👗 Item',product:'📦 Product',expense:'🧾 Expense',salary:'👤 Salary'}[d.type]||d.type}</span></td>
+              <td style="font-size:12px">${d.desc}${d.productQty?` <span style="font-size:10px;color:var(--muted)">(×${d.productQty})</span>`:''}</td>
               <td><strong style="color:var(--red)">${fmt(d.amount)}</strong></td>
               <td style="white-space:nowrap">
                 <button class="btn btn-ghost btn-sm" onclick="editOwnerDraw(${d.id})">✏️</button>
@@ -2905,6 +3754,31 @@ function renderOwnerDraw(){
     </div>`;
 }
 
+function toggleDrawProductField(){
+  const type=document.getElementById('drawType')?.value;
+  const isProduct=type==='product';
+  const g1=document.getElementById('drawProductGroup');
+  const g2=document.getElementById('drawProductQtyGroup');
+  if(g1) g1.style.display=isProduct?'':'none';
+  if(g2) g2.style.display=isProduct?'':'none';
+  if(isProduct){
+    let opts='<option value="">-- Select Product --</option>';
+    (store.products||[]).filter(p=>p.qty>0).forEach(p=>{opts+=`<option value="${p.id}">${p.name} (${p.size||''}, ${p.color||''}) - ${p.qty} in stock @ ${fmt(p.cost)}</option>`;});
+    document.getElementById('drawProductId').innerHTML=opts;
+  }
+}
+
+function onDrawProductSelect(){
+  const pid=+document.getElementById('drawProductId')?.value;
+  const qty=+document.getElementById('drawProductQty')?.value||1;
+  if(!pid) return;
+  const p=getProduct(pid);
+  if(p){
+    document.getElementById('drawAmount').value=p.cost*qty;
+    document.getElementById('drawDesc').value=`Took ${qty} × ${p.name} from inventory`;
+  }
+}
+
 function openOwnerDraw(){
   document.getElementById('drawEditId').value='';
   document.getElementById('drawAmount').value='';
@@ -2912,6 +3786,7 @@ function openOwnerDraw(){
   document.getElementById('drawDate').value=today();
   document.getElementById('drawType').value='cash';
   document.getElementById('ownerDrawModalTitle').textContent="💼 Record Owner's Draw";
+  toggleDrawProductField();
   openModal('ownerDrawModal');
 }
 
@@ -2924,13 +3799,24 @@ function editOwnerDraw(id){
   document.getElementById('drawDate').value=d.date;
   document.getElementById('drawType').value=d.type;
   document.getElementById('ownerDrawModalTitle').textContent="✏️ Edit Owner's Draw";
+  toggleDrawProductField();
+  if(d.type==='product'&&d.productId){
+    document.getElementById('drawProductId').value=d.productId;
+    document.getElementById('drawProductQty').value=d.productQty||1;
+  }
   openModal('ownerDrawModal');
 }
 
 function deleteOwnerDraw(id){
   if(!confirm('Delete this draw entry?'))return;
+  const d=(store.ownerDraws||[]).find(x=>x.id===id);
+  // Restore product qty if it was a product draw
+  if(d&&d.type==='product'&&d.productId){
+    const p=getProduct(d.productId);
+    if(p) p.qty+=(d.productQty||1);
+  }
   store.ownerDraws=(store.ownerDraws||[]).filter(d=>d.id!==id);
-  saveStore();renderOwnerDraw();
+  saveStore();renderOwnerDraw();renderInventory();
 }
 
 function saveOwnerDraw(){
@@ -2939,16 +3825,28 @@ function saveOwnerDraw(){
   const date=document.getElementById('drawDate').value;
   const type=document.getElementById('drawType').value;
   const editId=+document.getElementById('drawEditId').value||0;
+  const productId=type==='product'?(+document.getElementById('drawProductId')?.value||0):0;
+  const productQty=type==='product'?(+document.getElementById('drawProductQty')?.value||1):0;
   if(!amount||!desc){alert('Fill amount and description');return;}
   if(!store.ownerDraws) store.ownerDraws=[];
   if(editId){
     const d=store.ownerDraws.find(x=>x.id===editId);
-    if(d) Object.assign(d,{amount,desc,date,type});
+    if(d){
+      // Restore old product qty if was product type
+      if(d.type==='product'&&d.productId){const old=getProduct(d.productId);if(old)old.qty+=(d.productQty||1);}
+      Object.assign(d,{amount,desc,date,type,productId,productQty});
+      // Deduct new product qty
+      if(type==='product'&&productId){const p=getProduct(productId);if(p)p.qty-=productQty;}
+    }
   } else {
-    store.ownerDraws.push({id:++store.nextId,amount,desc,date,type});
+    if(type==='product'&&productId){
+      const p=getProduct(productId);
+      if(p){if(p.qty<productQty){alert('Not enough stock');return;}p.qty-=productQty;}
+    }
+    store.ownerDraws.push({id:++store.nextId,amount,desc,date,type,productId,productQty});
     logAction('expense',"Owner's Draw: "+desc,fmt(amount)+' | '+type);
   }
-  saveStore();closeModal('ownerDrawModal');renderOwnerDraw();
+  saveStore();closeModal('ownerDrawModal');renderOwnerDraw();renderInventory();
 }
 
 function _sanitizeStore(s){
@@ -2971,6 +3869,9 @@ function _sanitizeStore(s){
   if(s.productSeq<=maxDisplay) s.productSeq=maxDisplay+1;
   if(!Array.isArray(s.actionHistory)) s.actionHistory=[];
   if(!Array.isArray(s.ownerDraws)) s.ownerDraws=[];
+  if(typeof s.cashInHand !== 'number') s.cashInHand=0;
+  if(!Array.isArray(s.cashTransactions)) s.cashTransactions=[];
+  if(!Array.isArray(s.supplierOrders)) s.supplierOrders=[];
   return s;
 }
 function setupFirebaseSync(){
@@ -3027,7 +3928,7 @@ function syncToFirebase(){
 function clearAllData(){
   if(!confirm('⚠️ This will delete ALL data permanently. Are you sure?'))return;
   if(!confirm('Last warning! Everything will be erased. Continue?'))return;
-  store = {products:[],orders:[],discounts:[],returns:[],expenses:[],restockLog:[],suppliers:[],blacklist:[],nextId:1,productSeq:1,actionHistory:[],ownerDraws:[]};
+  store = {products:[],orders:[],discounts:[],returns:[],expenses:[],restockLog:[],suppliers:[],supplierReturns:[],blacklist:[],nextId:1,productSeq:1,actionHistory:[],ownerDraws:[],cashInHand:0,cashTransactions:[],supplierOrders:[]};
   saveStore();
   renderDashboard();
   alert('All data cleared.');
